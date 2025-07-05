@@ -129,7 +129,6 @@ Records conversation history and interactions in MongoDB, allowing the agent to 
 Maintains information about how to perform tasks and use tools effectively, implemented as a combination of predefined patterns and learned behaviors from interactions.
 
 ## Contributing
-
 Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License

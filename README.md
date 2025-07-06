@@ -19,7 +19,7 @@ A production-ready ReAct AI agent backend with comprehensive memory management, 
 
 - 🚀 **Production-Ready Architecture**:
   - FastAPI backend with RESTful endpoints
-  - Containerized with Docker for easy deployment
+  - Containerised with Docker for easy deployment
   - Monitoring with Prometheus and Grafana dashboards
   - Comprehensive testing suite
   - CI/CD pipeline for AWS deployment

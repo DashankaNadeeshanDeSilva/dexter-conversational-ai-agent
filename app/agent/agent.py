@@ -45,27 +45,6 @@ class AgentAction(str, Enum):
     USE_TOOL = "use_tool"
     RESPONSE = "response"
 
-def create_system_prompt():
-    """Create the system prompt for the agent."""
-    return """You are an AI assistant with advanced memory capabilities. 
-    
-You can:
-1. Access your short-term memory for the current conversation
-2. Access episodic memory for past interactions with this user
-3. Access semantic memory for relevant facts and information
-4. Access procedural memory for how to perform tasks
-
-When responding to users:
-- Be helpful, polite, and informative
-- Use your memory to provide personalized and contextually relevant responses
-- When you don't know something, you can use tools to find information
-
-Available tools:
-{tool_descriptions}
-
-Only use tools when necessary. Think step by step about how to respond.
-"""
-
 def create_system_prompt(tool_descriptions: str) -> str:
     """Create the system prompt for the agent."""
     with open("system_prompt.md", "r") as file:
@@ -130,18 +109,33 @@ class ReActAgent:
             # Check if there are semantic memories relevant to the last human message
             if state.messages and isinstance(state.messages[-1], HumanMessage):
                 query = state.messages[-1].content
+                
+                # Get semantic memories (existing)
                 semantic_memories = self.memory_manager.retrieve_semantic_memories(
                     user_id=state.user_id,
                     query=query,
                     k=3
                 )
                 
-                if semantic_memories:
+                # NEW: Get relevant episodic memories
+                episodic_memories = self.memory_manager.retrieve_episodic_memories(
+                    user_id=state.user_id,
+                    filter_query={
+                        "content.message.content": {"$regex": query, "$options": "i"}
+                    },
+                    limit=3
+                )
+                
+                # Combine memory contexts
+                if semantic_memories or episodic_memories:
                     memory_content = "Relevant information from memory:\n"
-                    for doc, score in semantic_memories:
-                        memory_content += f"- {doc.page_content} (relevance: {score:.2f})\n"
                     
-                    # Add semantic memories as a system message
+                    for doc, score in semantic_memories:
+                        memory_content += f"- Fact: {doc.page_content} (relevance: {score:.2f})\n"
+                    
+                    for episode in episodic_memories:
+                        memory_content += f"- Past interaction: {episode['content']['message']['content']}\n"
+                    
                     messages.insert(1, SystemMessage(content=memory_content))
             
             # Get response from LLM
@@ -261,7 +255,7 @@ class ReActAgent:
         human_message = HumanMessage(content=message)
         short_term_memory.add_message(human_message)
         
-        # Add to conversation in MongoDB as well
+        # Add to conversation in MongoDB as Episodic memory
         self.memory_manager.add_message_to_conversation(
             conversation_id=conversation_id,
             message={

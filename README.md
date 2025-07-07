@@ -1,4 +1,5 @@
-# Dexter v1.0 :AI Agent with Comprehensive Memory Systems
+# Dexter v1.0 :AI Agent with Comprehensive Memory Systems 
+**(🚧 under construction)**
 
 A production-ready ReAct AI agent backend with comprehensive memory management, including short-term (session memory) and long-term memory with semantic, episodic, and procedural components.
 

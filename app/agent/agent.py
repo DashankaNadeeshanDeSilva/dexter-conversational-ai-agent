@@ -117,7 +117,7 @@ class ReActAgent:
                     k=3
                 )
                 
-                # NEW: Get relevant episodic memories
+                # Get relevant episodic memories
                 episodic_memories = self.memory_manager.retrieve_episodic_memories(
                     user_id=state.user_id,
                     filter_query={

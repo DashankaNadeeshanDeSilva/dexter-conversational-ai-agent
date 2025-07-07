@@ -24,13 +24,15 @@ logger = logging.getLogger(__name__)
 
 # Define the agent state
 class AgentState(pydantic.BaseModel):
-    """State for the agent."""
+    """State for the agent.
+    Structured data container to maintain rich state information across multiple interactions 
+    while ensuring data integrity through Pydantic's validation features."""
     
-    messages: list[BaseMessage]
+    messages: list[BaseMessage] # stores the conversation history as a list of BaseMessage objects
     user_id: str
     conversation_id: str
     session_id: str
-    tools: Optional[List[BaseTool]] = None
+    tools: Optional[List[BaseTool]] = None # list that hold BaseTool objects representing tool capabilities
     tool_names: List[str] = []
     
     class Config:
@@ -63,6 +65,12 @@ Available tools:
 
 Only use tools when necessary. Think step by step about how to respond.
 """
+
+def create_system_prompt(tool_descriptions: str) -> str:
+    """Create the system prompt for the agent."""
+    with open("system_prompt.md", "r") as file:
+        system_prompt = file.read()
+    return system_prompt.format(tool_descriptions=tool_descriptions)
 
 class ReActAgent:
     """ReAct agent implementation using LangGraph."""
@@ -114,7 +122,7 @@ class ReActAgent:
                 f"- {tool.name}: {tool.description}" for tool in state.tools or []
             ])
             
-            system_prompt = create_system_prompt().format(tool_descriptions=tool_descriptions)
+            system_prompt = create_system_prompt(tool_descriptions=tool_descriptions)
             
             # Create prompt with messages
             messages = [SystemMessage(content=system_prompt)] + state.messages

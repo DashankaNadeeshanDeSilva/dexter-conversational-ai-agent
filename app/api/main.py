@@ -10,7 +10,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 
 from app.config import settings
-from app.core.agent import ReActAgent
+from app.agent.agent import ReActAgent
 from app.memory.memory_manager import MemoryManager
 
 # Configure logging
@@ -116,12 +116,14 @@ async def chat(request: ChatRequest):
         message = request.message
         
         # Get or create conversation_id
+        # conversation_id: represents a unique conversation thread (across multiple sessions) for given user
         conversation_id = request.conversation_id
         if not conversation_id:
             conversation_id = memory_manager.create_conversation(user_id)
             logger.info(f"Created new conversation {conversation_id} for user {user_id}")
         
         # Get or create session_id
+        # session_id: represents a unique interaction/context (within a conversation) for given user (supports short-term memory)
         session_id = request.session_id
         if not session_id:
             session_id = str(uuid.uuid4())
@@ -154,7 +156,7 @@ async def chat(request: ChatRequest):
             detail=f"Error processing chat: {str(e)}"
         )
 
-# Get conversations for user
+# Get conversations (all) for user
 @app.get(
     "/conversations/{user_id}", 
     response_model=ConversationListResponse, 

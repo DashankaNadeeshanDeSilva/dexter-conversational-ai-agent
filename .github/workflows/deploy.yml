@@ -2,7 +2,7 @@ name: Deploy AI Agent to AWS
 
 on:
   push:
-    branches: [ main ]
+    branches: [ stage ]
     
 env:
   AWS_REGION: us-east-1

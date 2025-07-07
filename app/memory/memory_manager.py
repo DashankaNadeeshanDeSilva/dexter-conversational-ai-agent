@@ -221,6 +221,7 @@ class MemoryManager:
         Returns:
             List of (document, score) tuples
         """
+        # TODO: try to retrive highest similarity (above thresholds) memories from Pinecone DB
         return self.pinecone_client.retrieve_similar(
             user_id=user_id,
             query=query,

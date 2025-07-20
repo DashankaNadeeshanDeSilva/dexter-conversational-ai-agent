@@ -106,7 +106,7 @@ class ReActAgent:
             # Create prompt with messages
             messages = [SystemMessage(content=system_prompt)] + state.messages
             
-            # Check if there are semantic memories relevant to the last human message
+            # Check if there are memories relevant to the last human message
             if state.messages and isinstance(state.messages[-1], HumanMessage):
                 query = state.messages[-1].content
                 
@@ -117,7 +117,7 @@ class ReActAgent:
                     k=3
                 )
                 
-                # Get relevant episodic memories
+                # Get episodic memories (relevant past interactions)
                 episodic_memories = self.memory_manager.retrieve_episodic_memories(
                     user_id=state.user_id,
                     filter_query={
@@ -126,16 +126,44 @@ class ReActAgent:
                     limit=3
                 )
                 
+                # Get procedural memories for similar contexts
+                procedural_memories = self.memory_manager.retrieve_procedural_memories(
+                    user_id=state.user_id,
+                    filter_query={
+                        "$or": [
+                            {"content.query_context": {"$regex": query[:50], "$options": "i"}},
+                            {"content.tool": {"$exists": True}},
+                            {"content.successful_pattern": {"$exists": True}}
+                        ]
+                    },
+                    limit=5
+                )
+                
                 # Combine memory contexts
-                if semantic_memories or episodic_memories:
+                if semantic_memories or episodic_memories or procedural_memories:
                     memory_content = "Relevant information from memory:\n"
                     
+                    # Add semantic context
                     for doc, score in semantic_memories:
                         memory_content += f"- Fact: {doc.page_content} (relevance: {score:.2f})\n"
                     
+                    # Add episodic context
                     for episode in episodic_memories:
                         memory_content += f"- Past interaction: {episode['content']['message']['content']}\n"
                     
+                    # Add procedural guidance
+                    if procedural_memories:
+                        memory_content += "\nLearned patterns and tool usage:\n"
+                        for procedure in procedural_memories:
+                            if "tool" in procedure["content"]:
+                                tool_name = procedure["content"]["tool"]
+                                args = procedure["content"].get("arguments", {})
+                                memory_content += f"- For similar queries, successfully used {tool_name} with args: {args}\n"
+                            elif "successful_pattern" in procedure["content"]:
+                                pattern = procedure["content"]["successful_pattern"]
+                                memory_content += f"- Successful approach: {pattern}\n"
+                    
+                    # Insert combined memories into context (just after system message/prompt)
                     messages.insert(1, SystemMessage(content=memory_content))
             
             # Get response from LLM
@@ -169,7 +197,7 @@ class ReActAgent:
                         )
                     )
                     
-                    # Add the function message to the state
+                    # Add the tool (function) message to the state
                     state.messages.append(
                         FunctionMessage(
                             name=action,
@@ -178,33 +206,68 @@ class ReActAgent:
                     )
                     
                     # Store procedural memory about tool usage
+                    query_context = ""
+                    if state.messages:
+                        # Get the original user query for context
+                        human_messages = [msg for msg in state.messages if isinstance(msg, HumanMessage)]
+                        if human_messages:
+                            query_context = human_messages[-1].content
+                    
                     self.memory_manager.store_procedural_memory(
                         user_id=state.user_id,
                         content={
                             "tool": action,
                             "arguments": args,
-                            "result_summary": str(tool_result)[:100] + "..."
+                            "result_summary": str(tool_result)[:100] + "...",
+                            "query_context": query_context,
+                            "success": True,  # We'll track success vs failure
+                            "tool_selection_reason": f"Used {action} for query about: {query_context[:50]}..."
                         },
                         metadata={
                             "conversation_id": state.conversation_id,
-                            "timestamp": str(datetime.utcnow())
+                            "timestamp": str(datetime.utcnow()),
+                            "tool_category": "successful_usage"
                         }
                     )
                     
                 except Exception as e:
                     logger.error(f"Error executing tool {action}: {e}")
-                    
-                    # Add error message
+
+                    # Add tool error message to the state
                     state.messages.append(
                         FunctionMessage(
                             name=action,
                             content=f"Error executing tool: {str(e)}"
                         )
                     )
+                    
+                    # Store procedural memory about failed tool usage
+                    query_context = ""
+                    if state.messages:
+                        human_messages = [msg for msg in state.messages if isinstance(msg, HumanMessage)]
+                        if human_messages:
+                            query_context = human_messages[-1].content
+                    
+                    self.memory_manager.store_procedural_memory(
+                        user_id=state.user_id,
+                        content={
+                            "tool": action,
+                            "arguments": args,
+                            "error": str(e),
+                            "query_context": query_context,
+                            "success": False,
+                            "failure_reason": f"Tool {action} failed with error: {str(e)}"
+                        },
+                        metadata={
+                            "conversation_id": state.conversation_id,
+                            "timestamp": str(datetime.utcnow()),
+                            "tool_category": "failed_usage"
+                        }
+                    )
             
             return state
         
-        # Create the graph
+        # Create the ReAct agent graph
         workflow = StateGraph(AgentState)
         
         # Add nodes
@@ -251,11 +314,12 @@ class ReActAgent:
         # Get short-term memory or initialize it
         short_term_memory = self.memory_manager.get_short_term_memory(session_id)
         
-        # Create HumanMessage and add to memory
+        # Create HumanMessage and add to Short-term memory
         human_message = HumanMessage(content=message)
         short_term_memory.add_message(human_message)
         
-        # Add to conversation in MongoDB as Episodic memory
+        ## Episodic Memory Storage
+        # Add conversation to the database as Episodic memory
         self.memory_manager.add_message_to_conversation(
             conversation_id=conversation_id,
             message={
@@ -286,7 +350,8 @@ class ReActAgent:
             else:
                 response = ai_messages[-1].content
             
-            # Store in MongoDB
+            ## Episodic Memory Storage
+            # Store agent response in coversation database as Episodic memory
             self.memory_manager.add_message_to_conversation(
                 conversation_id=conversation_id,
                 message={
@@ -294,17 +359,63 @@ class ReActAgent:
                     "content": response
                 }
             )
+
+            # Add ai response to Short-term memory
+            ai_response = AIMessage(content=response)
+            short_term_memory.add_message(ai_response)
             
-            # Store in semantic memory for future reference
-            full_context = message + "\n" + response
-            self.memory_manager.store_semantic_memory(
-                user_id=user_id,
-                text=full_context,
-                metadata={
-                    "conversation_id": conversation_id,
-                    "session_id": session_id
-                }
+            ## Semantic Memory Extraction and Storage
+            # Extract and store semantic facts using cognitive principles
+            # Get recent conversation context for better fact extraction
+            recent_conversation = self.memory_manager.get_conversation(conversation_id)
+            conversation_context = None
+            if recent_conversation and "messages" in recent_conversation:
+                conversation_context = recent_conversation["messages"][-6:]  # Last 6 messages for context
+            
+            # Extract semantic facts from the conversation (using LLM)
+            extracted_facts = self.memory_manager.extract_semantic_facts(
+                user_message=message,
+                agent_response=response,
+                conversation_context=conversation_context,
+                user_id=user_id
             )
+            
+            # Store extracted facts in Semantic memory
+            if extracted_facts:
+                self.memory_manager.store_extracted_semantic_facts(
+                    user_id=user_id,
+                    facts=extracted_facts,
+                    conversation_metadata={
+                        "conversation_id": conversation_id,
+                        "session_id": session_id,
+                        "source_type": "conversation_extraction"
+                    }
+                )
+                logger.info(f"Stored {len(extracted_facts)} semantic facts for user {user_id}")
+            
+            ## Procedural Memory Storage
+            # Store successful interaction pattern in procedural memory if response was generated successfully
+            if response and response != "I'm sorry, I wasn't able to generate a proper response.":
+                # Determine the pattern type based on tools used
+                tool_calls_made = []
+                for msg in result.messages:
+                    if isinstance(msg, AIMessage) and hasattr(msg, "tool_calls") and msg.tool_calls:
+                        for tool_call in msg.tool_calls:
+                            tool_calls_made.append(tool_call.name)
+                
+                pattern_type = "direct_response" if not tool_calls_made else f"tool_assisted_{'+'.join(tool_calls_made)}"
+                
+                self.memory_manager.store_successful_pattern(
+                    user_id=user_id,
+                    pattern_type=pattern_type,
+                    pattern_description=f"Successfully handled query '{message[:50]}...' with: {pattern_type}",
+                    context=message,
+                    metadata={
+                        "conversation_id": conversation_id,
+                        "timestamp": str(datetime.utcnow()),
+                        "tool_category": "successful_pattern"
+                    }
+                )
             
             logger.info(f"Processed message for user {user_id}")
             return response

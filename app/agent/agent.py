@@ -314,9 +314,8 @@ class ReActAgent:
         # Get short-term memory or initialize it
         short_term_memory = self.memory_manager.get_short_term_memory(session_id)
         
-        # Create HumanMessage and add to Short-term memory
-        human_message = HumanMessage(content=message)
-        short_term_memory.add_message(human_message)
+        # Add user message (HumanMessage) to Short-term memory
+        short_term_memory.add_user_message(message)
         
         ## Episodic Memory Storage
         # Add conversation to the database as Episodic memory
@@ -360,9 +359,8 @@ class ReActAgent:
                 }
             )
 
-            # Add ai response to Short-term memory
-            ai_response = AIMessage(content=response)
-            short_term_memory.add_message(ai_response)
+            # Add ai response (AIMessage) to Short-term memory
+            short_term_memory.add_ai_message(response)
             
             ## Semantic Memory Extraction and Storage
             # Extract and store semantic facts using cognitive principles

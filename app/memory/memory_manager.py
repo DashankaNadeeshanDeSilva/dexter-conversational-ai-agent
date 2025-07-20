@@ -48,6 +48,7 @@ class MemoryManager:
         
         return self.short_term_memories[session_id]
     
+    # redundant method to add a message to short-term memory 
     def add_message_to_short_term_memory(self, session_id: str, message: BaseMessage) -> None:
         """
         Add a message to short-term memory.

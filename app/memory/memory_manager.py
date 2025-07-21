@@ -594,7 +594,7 @@ Extract semantic facts that should be stored in long-term memory according to co
         from langchain_core.output_parsers import JsonOutputParser
         
         # Get the full conversation
-        conversation = self.memory_manager.get_conversation(conversation_id)
+        conversation = self.get_conversation(conversation_id)
         if not conversation or not conversation.get("messages"):
             logger.warning(f"No conversation found for consolidation: {conversation_id}")
             return []

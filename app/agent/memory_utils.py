@@ -9,29 +9,26 @@ class AgentMemoryUtils:
         """Initialize the memory utilities with the memory manager."""
         self.memory_manager = memory_manager
 
-    def retrive_memory_context(self, user_id: str, query: str) -> str:
+    def retrieve_memory_context(self, user_id: str, query: str) -> str:
         """Retireve and format memory context based on user query"""
 
-        # retrive semantic memories
+        # retrieve semantic memories
         semantic_memories = self.get_semantic_context(user_id, query, k=3)
-        # retrive episodic memories
+        # retrieve episodic memories
         episodic_memories = self.get_episodic_context(user_id, query, limit=3)
-        # retrive procedural memories
+        # retrieve procedural memories
         procedural_memories = self.get_procedural_context(user_id, query, limit=5)
 
         # combine all memory contexts
-        if semantic_memories or episodic_memories or procedural_memories:
-            return memory_context = self.combine_memory_contexts(
-                semantic_memories=semantic_memories,
-                episodic_memories=episodic_memories,
-                procedural_memories=procedural_memories
-            )
-        else:
-            return "No relevant information found in memory."
+        memory_context = self.combine_memory_contexts(
+            semantic_memories=semantic_memories,
+            episodic_memories=episodic_memories,
+            procedural_memories=procedural_memories
+        )
+        return memory_context
             
     def get_semantic_context(self, user_id: str, query: str, k: int = 3) -> List[Tuple[Document, float]]:
         """Retrieve and format semantic memories."""
-        # Get semantic memories (existing)
         semantic_memories = self.memory_manager.retrieve_semantic_memories(
             user_id=user_id,
             query=query,

@@ -19,6 +19,7 @@ import pydantic
 from app.config import settings
 from app.memory.memory_manager import MemoryManager, MemoryType
 from app.tools.search_tool import SearchTool
+from app.agent.memory_utils import AgentMemoryUtils
 
 logger = logging.getLogger(__name__)
 
@@ -109,63 +110,17 @@ class ReActAgent:
             # Check if there are memories relevant to the last human message
             if state.messages and isinstance(state.messages[-1], HumanMessage):
                 query = state.messages[-1].content
-                
-                # Get semantic memories (existing)
-                semantic_memories = self.memory_manager.retrieve_semantic_memories(
-                    user_id=state.user_id,
-                    query=query,
-                    k=3
-                )
-                
-                # Get episodic memories (relevant past interactions)
-                episodic_memories = self.memory_manager.retrieve_episodic_memories(
-                    user_id=state.user_id,
-                    filter_query={
-                        "content.message.content": {"$regex": query, "$options": "i"}
-                    },
-                    limit=3
-                )
-                
-                # Get procedural memories for similar contexts
-                procedural_memories = self.memory_manager.retrieve_procedural_memories(
-                    user_id=state.user_id,
-                    filter_query={
-                        "$or": [
-                            {"content.query_context": {"$regex": query[:50], "$options": "i"}},
-                            {"content.tool": {"$exists": True}},
-                            {"content.successful_pattern": {"$exists": True}}
-                        ]
-                    },
-                    limit=5
-                )
-                
-                # Combine memory contexts
-                if semantic_memories or episodic_memories or procedural_memories:
-                    memory_content = "Relevant information from memory:\n"
-                    
-                    # Add semantic context
-                    for doc, score in semantic_memories:
-                        memory_content += f"- Fact: {doc.page_content} (relevance: {score:.2f})\n"
-                    
-                    # Add episodic context
-                    for episode in episodic_memories:
-                        memory_content += f"- Past interaction: {episode['content']['message']['content']}\n"
-                    
-                    # Add procedural guidance
-                    if procedural_memories:
-                        memory_content += "\nLearned patterns and tool usage:\n"
-                        for procedure in procedural_memories:
-                            if "tool" in procedure["content"]:
-                                tool_name = procedure["content"]["tool"]
-                                args = procedure["content"].get("arguments", {})
-                                memory_content += f"- For similar queries, successfully used {tool_name} with args: {args}\n"
-                            elif "successful_pattern" in procedure["content"]:
-                                pattern = procedure["content"]["successful_pattern"]
-                                memory_content += f"- Successful approach: {pattern}\n"
-                    
-                    # Insert combined memories into context (just after system message/prompt)
-                    messages.insert(1, SystemMessage(content=memory_content))
-            
+
+                # Get memories relevant to the last human message
+                agent_memory_utils = AgentMemoryUtils(self.memory_manager)
+
+                # Check and retrieve relevant memories from semantic, episodic, and procedural memories
+                memory_context = agent_memory_utils.retrieve_memory_context(state.user_id, query)
+
+                # Insert combined memories into context (just after system message/prompt)
+                if memory_context != "No relevant information found in memory.":
+                    messages.insert(1, SystemMessage(content=memory_context))
+ 
             # Get response from LLM
             response = self.llm.invoke(
                 messages,

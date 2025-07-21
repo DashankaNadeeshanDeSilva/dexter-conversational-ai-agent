@@ -366,36 +366,34 @@ class ReActAgent:
             short_term_memory.add_ai_message(response)
             
             ## Semantic Memory Extraction and Storage 
-
-            # TODO: Extract semantic facts ONLY if there exist 6 messages in the conversation
-
-            # Extract and store semantic facts using cognitive principles
-            # Get recent conversation context for better fact extraction
-            recent_conversation = self.memory_manager.get_conversation(conversation_id)
-            conversation_context = None
-            if recent_conversation and "messages" in recent_conversation:
-                conversation_context = recent_conversation["messages"][-6:]  # Last 6 messages for context
-            
-            # Extract semantic facts from the conversation (using LLM)
-            extracted_facts = self.memory_manager.extract_semantic_facts(
-                user_message=message,
-                agent_response=response,
-                conversation_context=conversation_context,
-                user_id=user_id
-            )
-            
-            # Store extracted facts in Semantic memory
-            if extracted_facts:
-                self.memory_manager.store_extracted_semantic_facts(
-                    user_id=user_id,
-                    facts=extracted_facts,
-                    conversation_metadata={
-                        "conversation_id": conversation_id,
-                        "session_id": session_id,
-                        "source_type": "conversation_extraction"
-                    }
+            # Extract semantic facts after every N messages from the last M messages
+            # This is to ensure we have enough context for meaningful fact extraction
+            MESSAGE_CONTEXT_LIMIT = 8  # Limit to last 6 messages for context
+            EXTRACTION_INTERVAL = 10  # Only extract every 10 messages
+            num_messages = len(short_term_memory.get_messages())
+            if num_messages > MESSAGE_CONTEXT_LIMIT & num_messages % EXTRACTION_INTERVAL == 0:
+                conversation_context = short_term_memory.get_messages()[-MESSAGE_CONTEXT_LIMIT:]
+   
+                # Extract semantic facts from the conversation (using LLM)
+                extracted_facts = self.memory_manager.extract_semantic_facts(
+                    user_message=message,
+                    agent_response=response,
+                    conversation_context=conversation_context,
+                    user_id=user_id
                 )
-                logger.info(f"Stored {len(extracted_facts)} semantic facts for user {user_id}")
+                
+                # Store extracted facts in Semantic memory
+                if extracted_facts:
+                    self.memory_manager.store_extracted_semantic_facts(
+                        user_id=user_id,
+                        facts=extracted_facts,
+                        conversation_metadata={
+                            "conversation_id": conversation_id,
+                            "session_id": session_id,
+                            "source_type": "conversation_extraction"
+                        }
+                    )
+                    logger.info(f"Stored {len(extracted_facts)} semantic facts for user {user_id}")
             
             ## Procedural Memory Storage
             # Store successful interaction pattern in procedural memory if response was generated successfully

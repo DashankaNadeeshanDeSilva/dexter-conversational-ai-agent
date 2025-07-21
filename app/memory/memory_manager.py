@@ -11,6 +11,10 @@ from langchain_core.messages import BaseMessage
 from app.memory.mongodb_client import MongoDBClient
 from app.memory.pinecone_client import PineconeClient
 from app.memory.short_term_memory import ShortTermMemory
+from app.memory.session_manager import SessionManager
+from app.memory.semantic_extractor import SemanticExtractor
+from app.memory.episodic_memory import EpisodicMemoryManager
+from app.memory.procedural_memory import ProceduralMemoryManager
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +33,10 @@ class MemoryManager:
         self.mongodb_client = MongoDBClient()
         self.pinecone_client = PineconeClient()
         self.short_term_memories = {}  # Map of session_id -> ShortTermMemory
+        self.session_manager = SessionManager(self.mongodb_client)
+        self.semantic_extractor = SemanticExtractor()
+        self.episodic_memory = EpisodicMemoryManager(self.mongodb_client)
+        self.procedural_memory = ProceduralMemoryManager(self.mongodb_client)
         logger.info("Memory manager initialized")
     
     # Get or create a short-term memory for a session
@@ -48,7 +56,7 @@ class MemoryManager:
         
         return self.short_term_memories[session_id]
     
-    # redundant method to add a message to short-term memory 
+    ### redundant method to add a message to short-term memory 
     def add_message_to_short_term_memory(self, session_id: str, message: BaseMessage) -> None:
         """
         Add a message to short-term memory.
@@ -60,6 +68,7 @@ class MemoryManager:
         memory = self.get_short_term_memory(session_id)
         memory.add_message(message)
     
+    ### redundant method
     def get_short_term_memory_messages(self, session_id: str) -> List[BaseMessage]:
         """
         Get messages from short-term memory.
@@ -84,6 +93,7 @@ class MemoryManager:
             self.short_term_memories[session_id].clear()
             logger.debug(f"Cleared short-term memory for session {session_id}")
     
+    # used in test cases
     def store_episodic_memory(
         self, 
         user_id: str, 
@@ -101,9 +111,8 @@ class MemoryManager:
         Returns:
             Memory ID
         """
-        return self.mongodb_client.store_memory(
+        return self.episodic_memory.store_event(
             user_id=user_id,
-            memory_type=MemoryType.EPISODIC.value,
             content=content,
             metadata=metadata
         )
@@ -125,9 +134,8 @@ class MemoryManager:
         Returns:
             Memory ID
         """
-        return self.mongodb_client.store_memory(
+        return self.procedural_memory.store_pattern(
             user_id=user_id,
-            memory_type=MemoryType.PROCEDURAL.value,
             content=content,
             metadata=metadata
         )
@@ -172,9 +180,8 @@ class MemoryManager:
         Returns:
             List of episodic memories
         """
-        return self.mongodb_client.retrieve_memories(
+        return self.episodic_memory.retrieve_events(
             user_id=user_id,
-            memory_type=MemoryType.EPISODIC.value,
             filter_query=filter_query,
             limit=limit
         )
@@ -196,9 +203,8 @@ class MemoryManager:
         Returns:
             List of procedural memories
         """
-        return self.mongodb_client.retrieve_memories(
+        return self.procedural_memory.retrieve_patterns(
             user_id=user_id,
-            memory_type=MemoryType.PROCEDURAL.value,
             filter_query=filter_query,
             limit=limit
         )
@@ -243,16 +249,10 @@ class MemoryManager:
         # Store the message as episodic memory as well
         user_id = self.get_conversation_user_id(conversation_id)
         if user_id:
-            self.store_episodic_memory(
+            self.episodic_memory.store_conversation_message(
                 user_id=user_id,
-                content={
-                    "conversation_id": conversation_id,
-                    "message": message
-                },
-                metadata={
-                    "timestamp": datetime.utcnow().isoformat(),
-                    "message_type": message.get("role", "unknown")
-                }
+                conversation_id=conversation_id,
+                message=message
             )
         
         return self.mongodb_client.add_message(conversation_id, message)
@@ -315,17 +315,15 @@ class MemoryManager:
         Returns:
             Memory ID
         """
-        return self.store_procedural_memory(
+        return self.procedural_memory.store_successful_pattern(
             user_id=user_id,
-            content={
-                "pattern_type": pattern_type,
-                "successful_pattern": pattern_description,
-                "context": context,
-                "success": True
-            },
+            pattern_type=pattern_type,
+            pattern_description=pattern_description,
+            context=context,
             metadata=metadata
         )
     
+    # redundant method to retrieve tool usage patterns
     def get_tool_usage_patterns(
         self,
         user_id: str,
@@ -345,21 +343,11 @@ class MemoryManager:
         Returns:
             List of tool usage patterns
         """
-        filter_query = {}
-        
-        if tool_name:
-            filter_query["content.tool"] = tool_name
-            
-        if success_only:
-            filter_query["content.success"] = True
-            
-        if query_context:
-            filter_query["content.query_context"] = {"$regex": query_context, "$options": "i"}
-        
-        return self.retrieve_procedural_memories(
+        return self.procedural_memory.get_tool_usage_patterns(
             user_id=user_id,
-            filter_query=filter_query,
-            limit=10
+            tool_name=tool_name,
+            query_context=query_context,
+            success_only=success_only
         )
     
     def close(self):
@@ -377,11 +365,7 @@ class MemoryManager:
         """
         Extract factual knowledge from conversation using cognitive principles.
         
-        Based on cognitive science research, this method identifies:
-        1. Declarative facts (explicit knowledge shared)
-        2. Implicit preferences and traits revealed
-        3. Domain knowledge and concepts discussed
-        4. Relational knowledge (connections between entities)
+        This method delegates to the SemanticExtractor module for modular processing.
         
         Args:
             user_message: The user's input message
@@ -392,138 +376,12 @@ class MemoryManager:
         Returns:
             List of extracted semantic facts with metadata
         """
-        from langchain_openai import ChatOpenAI
-        from langchain_core.prompts import ChatPromptTemplate
-        from langchain_core.output_parsers import JsonOutputParser
-        import json
-        
-        # Initialize LLM for fact extraction
-        extraction_llm = ChatOpenAI(
-            model="gpt-4",  # Use more capable model for extraction
-            temperature=0.1,  # Low temperature for consistent extraction
-            api_key=settings.OPENAI_API_KEY
+        return self.semantic_extractor.extract_facts(
+            user_message=user_message,
+            agent_response=agent_response,
+            conversation_context=conversation_context,
+            user_id=user_id
         )
-        
-        # Create extraction prompt based on cognitive science principles
-        extraction_prompt = ChatPromptTemplate.from_messages([
-            ("system", """You are an expert cognitive scientist specializing in semantic memory extraction. 
-            Your task is to extract factual knowledge from conversations that should be stored in long-term semantic memory.
-
-            COGNITIVE PRINCIPLES FOR SEMANTIC MEMORY:
-            1. **Declarative Facts**: Explicit factual statements that can be recalled independently
-            2. **Conceptual Knowledge**: Definitions, categories, and conceptual relationships
-            3. **Personal Attributes**: Stable traits, preferences, and characteristics revealed
-            4. **Domain Knowledge**: Subject-matter expertise and domain-specific information
-            5. **Relational Knowledge**: Relationships between entities, people, concepts
-
-            EXTRACTION CRITERIA:
-            - Extract facts that are GENERALIZABLE beyond this specific conversation
-            - Focus on STABLE information that won't change rapidly
-            - Identify IMPLICIT knowledge revealed through conversation patterns
-            - Avoid conversation-specific details (store those in episodic memory)
-            - Extract knowledge that could inform FUTURE interactions
-
-            OUTPUT FORMAT: Return a JSON array of fact objects, each with:
-            {{
-                "fact": "The factual statement in clear, declarative form",
-                "category": "personal_attribute|domain_knowledge|conceptual_knowledge|relational_knowledge|preference",
-                "confidence": 0.0-1.0,
-                "source_type": "explicit|implicit|inferred",
-                "entities": ["list", "of", "key", "entities"],
-                "context_requirement": "none|domain_specific|personal_context"
-            }}
-
-            If no significant semantic facts are found, return an empty array []."""),
-            
-            ("human", """CONVERSATION TO ANALYZE:
-
-User Message: {user_message}
-
-Agent Response: {agent_response}
-
-{context_prompt}
-
-Extract semantic facts that should be stored in long-term memory according to cognitive principles.""")
-        ])
-        
-        # Prepare context if available
-        context_prompt = ""
-        if conversation_context:
-            recent_messages = conversation_context[-3:]  # Last 3 exchanges for context
-            context_text = "\n".join([
-                f"- {msg.get('role', 'unknown')}: {msg.get('content', '')}"
-                for msg in recent_messages
-            ])
-            context_prompt = f"\nRECENT CONVERSATION CONTEXT:\n{context_text}\n"
-        
-        # Set up JSON parser
-        parser = JsonOutputParser()
-        
-        # Create the extraction chain
-        extraction_chain = extraction_prompt | extraction_llm | parser
-        
-        try:
-            # Extract facts
-            extracted_facts = extraction_chain.invoke({
-                "user_message": user_message,
-                "agent_response": agent_response,
-                "context_prompt": context_prompt
-            })
-            
-            # Validate and enhance extracted facts
-            validated_facts = []
-            for fact in extracted_facts:
-                if self._validate_semantic_fact(fact):
-                    # Add extraction metadata
-                    fact.update({
-                        "extraction_timestamp": datetime.utcnow().isoformat(),
-                        "extraction_method": "llm_cognitive_principles",
-                        "user_id": user_id
-                    })
-                    validated_facts.append(fact)
-            
-            logger.info(f"Extracted {len(validated_facts)} semantic facts from conversation")
-            return validated_facts
-            
-        except Exception as e:
-            logger.error(f"Error extracting semantic facts: {e}")
-            return []
-    
-    def _validate_semantic_fact(self, fact: Dict[str, Any]) -> bool:
-        """
-        Validate extracted semantic facts for quality and relevance.
-        
-        Args:
-            fact: Extracted fact dictionary
-            
-        Returns:
-            True if fact is valid for semantic storage
-        """
-        required_fields = ["fact", "category", "confidence"]
-        
-        # Check required fields
-        if not all(field in fact for field in required_fields):
-            return False
-        
-        # Check confidence threshold
-        if fact.get("confidence", 0) < 0.3:  # Minimum confidence threshold
-            return False
-        
-        # Check fact content quality
-        fact_text = fact.get("fact", "").strip()
-        if len(fact_text) < 10:  # Too short to be meaningful
-            return False
-        
-        # Check for conversation-specific content that shouldn't be in semantic memory
-        conversation_indicators = [
-            "in this conversation", "just now", "earlier today", 
-            "you mentioned", "as we discussed", "right now"
-        ]
-        
-        if any(indicator in fact_text.lower() for indicator in conversation_indicators):
-            return False
-        
-        return True
     
     def store_extracted_semantic_facts(
         self,
@@ -569,6 +427,8 @@ Extract semantic facts that should be stored in long-term memory according to co
         
         return stored_memory_ids
     
+    # TODO: Consolidation orchestration and management - deferred for future implementation
+    # This method will be fully implemented in the next phase after thorough discussion
     def consolidate_session_knowledge(
         self,
         user_id: str,
@@ -578,8 +438,8 @@ Extract semantic facts that should be stored in long-term memory according to co
         """
         Consolidate knowledge from an entire session using cognitive principles.
         
-        This method implements the "big picture" approach by analyzing
-        patterns and themes across an entire conversation session.
+        DEFERRED: This functionality is temporarily deferred pending 
+        consolidation orchestration design and implementation.
         
         Args:
             user_id: User ID
@@ -587,114 +447,7 @@ Extract semantic facts that should be stored in long-term memory according to co
             conversation_id: Conversation ID
             
         Returns:
-            List of memory IDs for consolidated knowledge
+            List of memory IDs for consolidated knowledge (empty for now)
         """
-        from langchain_openai import ChatOpenAI
-        from langchain_core.prompts import ChatPromptTemplate
-        from langchain_core.output_parsers import JsonOutputParser
-        
-        # Get the full conversation
-        conversation = self.get_conversation(conversation_id)
-        if not conversation or not conversation.get("messages"):
-            logger.warning(f"No conversation found for consolidation: {conversation_id}")
-            return []
-        
-        messages = conversation["messages"]
-        if len(messages) < 4:  # Need at least 2 exchanges to consolidate
-            logger.debug("Conversation too short for knowledge consolidation")
-            return []
-        
-        # Initialize LLM for consolidation
-        consolidation_llm = ChatOpenAI(
-            model="gpt-4",
-            temperature=0.1,
-            api_key=settings.OPENAI_API_KEY
-        )
-        
-        # Create consolidation prompt
-        consolidation_prompt = ChatPromptTemplate.from_messages([
-            ("system", """You are a cognitive scientist specializing in knowledge consolidation from conversations.
-
-            Your task is to analyze an ENTIRE conversation session and extract HIGH-LEVEL semantic knowledge that emerges from the conversation as a whole, not just individual exchanges.
-
-            CONSOLIDATION PRINCIPLES:
-            1. **Thematic Knowledge**: Overarching themes and topics discussed
-            2. **Progressive Understanding**: Knowledge that builds up over multiple exchanges  
-            3. **Implicit Patterns**: User behaviors, preferences, and traits revealed across the session
-            4. **Domain Expertise**: Subject matter knowledge demonstrated or discussed
-            5. **Relationship Dynamics**: How the user interacts with AI/information
-
-            LOOK FOR:
-            - Recurring topics or interests
-            - Evolution of understanding throughout the conversation
-            - Persistent preferences or constraints
-            - Domain knowledge areas the user is interested in
-            - Problem-solving patterns and approaches
-            - Learning objectives or goals that emerge
-
-            OUTPUT FORMAT: JSON array of consolidated knowledge objects:
-            {{
-                "knowledge": "Consolidated knowledge statement",
-                "type": "thematic|progressive|behavioral|domain|relational",
-                "confidence": 0.0-1.0,
-                "evidence_count": number_of_supporting_exchanges,
-                "scope": "session|domain|personal_trait",
-                "entities": ["key", "entities", "involved"]
-            }}
-
-            Focus on knowledge that is MORE VALUABLE than individual facts - knowledge that emerges from the conversation pattern."""),
-            
-            ("human", """FULL CONVERSATION SESSION TO CONSOLIDATE:
-
-            {conversation_text}
-
-            Extract consolidated knowledge that emerges from this complete conversation session.""")
-        ])
-        
-        # Prepare conversation text
-        conversation_text = ""
-        for i, msg in enumerate(messages):
-            role = msg.get("role", "unknown")
-            content = msg.get("content", "")
-            conversation_text += f"{i+1}. {role.upper()}: {content}\n\n"
-        
-        # Set up parser
-        parser = JsonOutputParser()
-        
-        # Create consolidation chain
-        consolidation_chain = consolidation_prompt | consolidation_llm | parser
-        
-        try:
-            # Extract consolidated knowledge
-            consolidated_knowledge = consolidation_chain.invoke({
-                "conversation_text": conversation_text
-            })
-            
-            # Store consolidated knowledge
-            stored_ids = []
-            for knowledge in consolidated_knowledge:
-                if knowledge.get("confidence", 0) >= 0.4:  # Higher threshold for consolidated knowledge
-                    
-                    memory_id = self.memory_manager.store_semantic_memory(
-                        user_id=user_id,
-                        text=knowledge["knowledge"],
-                        metadata={
-                            "knowledge_type": "consolidated",
-                            "consolidation_type": knowledge.get("type"),
-                            "confidence": knowledge.get("confidence"),
-                            "evidence_count": knowledge.get("evidence_count"),
-                            "scope": knowledge.get("scope"),
-                            "entities": knowledge.get("entities", []),
-                            "source_conversation": conversation_id,
-                            "source_session": session_id,
-                            "consolidation_timestamp": datetime.utcnow().isoformat()
-                        }
-                    )
-                    stored_ids.append(memory_id)
-            
-            logger.info(f"Consolidated {len(stored_ids)} knowledge items from session {session_id}")
-            return stored_ids
-            
-        except Exception as e:
-            logger.error(f"Error consolidating session knowledge: {e}")
-            return []
+        logger.info(f"Session knowledge consolidation deferred for session {session_id}")
+        return []  # Return empty list until consolidation is properly implemented

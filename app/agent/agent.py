@@ -311,6 +311,9 @@ class ReActAgent:
         Returns:
             Agent response
         """
+        # Update session activity for user message
+        #self.memory_manager.session_manager.update_session_activity(session_id, "message")
+        
         # Get short-term memory or initialize it
         short_term_memory = self.memory_manager.get_short_term_memory(session_id)
         
@@ -318,7 +321,7 @@ class ReActAgent:
         short_term_memory.add_user_message(message)
         
         ## Episodic Memory Storage
-        # Add conversation to the database as Episodic memory
+        # Add user message to the database as Episodic memory
         self.memory_manager.add_message_to_conversation(
             conversation_id=conversation_id,
             message={
@@ -362,7 +365,10 @@ class ReActAgent:
             # Add ai response (AIMessage) to Short-term memory
             short_term_memory.add_ai_message(response)
             
-            ## Semantic Memory Extraction and Storage
+            ## Semantic Memory Extraction and Storage 
+
+            # TODO: Extract semantic facts ONLY if there exist 6 messages in the conversation
+
             # Extract and store semantic facts using cognitive principles
             # Get recent conversation context for better fact extraction
             recent_conversation = self.memory_manager.get_conversation(conversation_id)

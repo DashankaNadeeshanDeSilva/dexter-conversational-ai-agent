@@ -366,13 +366,12 @@ class ReActAgent:
             short_term_memory.add_ai_message(response)
             
             ## Semantic Memory Extraction and Storage 
-            # Extract semantic facts after every N messages from the last M messages
+            # Extract semantic facts after every N messages from the last N messages
             # This is to ensure we have enough context for meaningful fact extraction
-            MESSAGE_CONTEXT_LIMIT = 8  # Limit to last 6 messages for context
-            EXTRACTION_INTERVAL = 10  # Only extract every 10 messages
+            EXTRACTION_INTERVAL = 10   # Extract every 10 messages, use last 10 as context
             num_messages = len(short_term_memory.get_messages())
-            if num_messages > MESSAGE_CONTEXT_LIMIT & num_messages % EXTRACTION_INTERVAL == 0:
-                conversation_context = short_term_memory.get_messages()[-MESSAGE_CONTEXT_LIMIT:]
+            if num_messages > EXTRACTION_INTERVAL and num_messages % EXTRACTION_INTERVAL == 0:
+                conversation_context = short_term_memory.get_messages()[-EXTRACTION_INTERVAL:]
    
                 # Extract semantic facts from the conversation (using LLM)
                 extracted_facts = self.memory_manager.extract_semantic_facts(

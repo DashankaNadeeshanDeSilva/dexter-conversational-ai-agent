@@ -32,19 +32,18 @@ class SemanticRetrievalTool(BaseTool):
             Formatted string with relevant semantic knowledge
         """
         try:
-            results = self.pinecone_client.query(
-                query_text=query,
+            results = self.pinecone_client.query_knowledge(
+                query=query,
                 top_k=max_results,
                 filter_metadata={"content_type": "knowledge"}
             )
-            
-            if not results or not results.get('matches'):
+
+            if not results: # List[Tuple[Document, float]]
                 return "No relevant semantic knowledge found."
             
             # Filter results by similarity threshold
             filtered_results = [
-                match for match in results['matches'] 
-                if match.get('score', 0) >= similarity_threshold
+                (doc, score) for doc, score in results if score >= similarity_threshold)
             ]
             
             if not filtered_results:
@@ -53,13 +52,10 @@ class SemanticRetrievalTool(BaseTool):
             
             # Format results for readability
             formatted_results = []
-            for i, match in enumerate(filtered_results, 1):
-                metadata = match.get('metadata', {})
-                content = metadata.get('text', 'No content available')
-                source = metadata.get('source', 'Unknown source')
-                score = match.get('score', 0)
-                
-                # Better formatted result with clear structure
+            for i, (doc, score) in enumerate(filtered_results, 1):
+                content = doc.page_content.strip()
+                source = doc.metadata.get('source', 'Unknown Source')
+        
                 formatted_result = (
                     f"{i}. {content}\n"
                     f"   Source: {source}\n" 

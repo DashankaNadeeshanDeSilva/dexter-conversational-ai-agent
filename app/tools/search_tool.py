@@ -13,14 +13,10 @@ class SearchTool(BaseTool):
     
     name = "internet_search"
     description = "Search the internet for information about a query using DuckDuckGo"
-    
-    max_results: int = Field(default=5, description="Maximum number of search results to return")
-    
-    def _run(self, query: str, **kwargs) -> str:
+       
+    def _run(self, query: str, max_results: int = 5) -> str:
         """Run the search tool."""
-        try:
-            logger.info(f"Performing internet search: {query}")
-            
+        try:          
             with DDGS() as ddgs:
                 results = list(ddgs.text(query, max_results=self.max_results))
             
@@ -43,8 +39,3 @@ class SearchTool(BaseTool):
         except Exception as e:
             logger.error(f"Error during internet search: {e}")
             return f"Error performing search: {str(e)}"
-    
-    async def _arun(self, query: str, **kwargs) -> str:
-        """Run the search tool asynchronously."""
-        # DuckDuckGo doesn't have an async API, so just call the sync version
-        return self._run(query, **kwargs)

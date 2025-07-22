@@ -19,6 +19,7 @@ import pydantic
 from app.config import settings
 from app.memory.memory_manager import MemoryManager, MemoryType
 from app.tools.search_tool import SearchTool
+from app.tools.semantic_retrieval_tool import SemanticRetrievalTool
 from app.agent.memory_utils import AgentMemoryUtils
 
 logger = logging.getLogger(__name__)
@@ -76,7 +77,8 @@ class ReActAgent:
     def _setup_tools(self) -> List[BaseTool]:
         """Set up tools for the agent."""
         tools = [
-            SearchTool()
+            SearchTool(),
+            SemanticRetrievalTool()
         ]
         return tools
     
@@ -97,11 +99,10 @@ class ReActAgent:
         
         def think(state: AgentState) -> AgentState:
             """Generate agent thoughts/response."""
-            # Prepare system prompt
+            # Prepare tool descriptions and system prompt
             tool_descriptions = "\n".join([
                 f"- {tool.name}: {tool.description}" for tool in state.tools or []
-            ])
-            
+            ]) 
             system_prompt = create_system_prompt(tool_descriptions=tool_descriptions)
             
             # Create prompt with messages

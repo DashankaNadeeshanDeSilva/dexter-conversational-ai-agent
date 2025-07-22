@@ -17,11 +17,11 @@ logger = logging.getLogger(__name__)
 class PineconeClient:
     """Pinecone client for semantic vector storage."""
     
-    def __init__(self):
+    def __init__(self, index_name: Optional[str] = settings.PINECONE_INDEX):
         """Initialize Pinecone client."""
         self.api_key = settings.PINECONE_API_KEY
         self.environment = settings.PINECONE_ENVIRONMENT
-        self.index_name = settings.PINECONE_INDEX
+        self.index_name = index_name
         
         # Initialize Pinecone
         self.pc = Pinecone(api_key=self.api_key)
@@ -140,7 +140,32 @@ class PineconeClient:
         
         logger.debug(f"Retrieved {len(results)} similar memories for user {user_id}")
         return results
-    
+
+    def query_knowledge(
+        self,
+        query: str,
+        top_k: int = 5,
+        filter_metadata: Optional[Dict[str, Any]] = None
+    )->  List[Tuple[Document, float]]:
+        """
+        Query the knowledge base.
+
+        Args:
+            query: The search query
+            top_k: Number of results to return
+            filter_metadata: Optional metadata filters 
+        Returns:
+            List of matching documents with metadata
+        """
+        
+        result_docs = self.vector_store.similarity_search_with_score(
+            query=query,
+            k=top_k,
+            filter=filter_metadata
+        )
+
+        return result_docs
+
     def delete_memory(self, memory_id: str) -> bool:
         """Delete a memory by ID."""
         try:

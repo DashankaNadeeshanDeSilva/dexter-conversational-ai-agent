@@ -8,7 +8,7 @@ from duckduckgo_search import DDGS
 
 logger = logging.getLogger(__name__)
 
-class SearchTool(BaseTool):
+class WebSearchTool(BaseTool):
     """Tool for internet search using DuckDuckGo."""
     
     name = "internet_search"
@@ -18,7 +18,7 @@ class SearchTool(BaseTool):
         """Run the search tool."""
         try:          
             with DDGS() as ddgs:
-                results = list(ddgs.text(query, max_results=self.max_results))
+                results = list(ddgs.text(query, max_results=max_results))
             
             if not results:
                 logger.warning(f"No search results found for: {query}")

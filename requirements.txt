@@ -24,6 +24,9 @@ httpx>=0.25.0
 beautifulsoup4>=4.12.2
 duckduckgo-search>=3.9.3
 
+# NLP and Named Entity Recognition
+spacy>=3.7.0
+
 # Monitoring and logging
 prometheus-client>=0.17.1
 grafana-client>=2.2.0

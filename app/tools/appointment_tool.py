@@ -8,23 +8,15 @@ from langchain_core.tools import BaseTool
 import spacy
 
 from app.tools.database_client import DatabaseClient
+from app.tools.tool_config import (
+    APPOINTMENT_SERVICE_TYPES,
+    CANCELLATION_KEYWORDS,
+    SPACY_MODEL_NAME,
+    ERROR_MESSAGES,
+    SUCCESS_MESSAGES
+)
 
 logger = logging.getLogger(__name__)
-
-APPOINTMENT_SERVICE_TYPES = [
-    "consultation",
-    "checkup", 
-    "meeting",
-    "therapy",
-    "treatment",
-    "examination",
-    "follow-up",
-    "initial_visit",
-    "routine_checkup",
-    "emergency",
-    "telehealth",
-    "group_session"
-]
 
 class AppointmentTool(BaseTool):
     """Tool for managing appointments with full CRUD operations."""
@@ -36,7 +28,11 @@ class AppointmentTool(BaseTool):
         """Initialize the appointment management tool."""
         super().__init__(**kwargs)
         self.db_client = DatabaseClient()
-        self.ner = spacy.load("en_core_web_sm")
+        try:
+            self.ner = spacy.load(SPACY_MODEL_NAME)
+        except OSError:
+            logger.warning(f"Could not load SpaCy model '{SPACY_MODEL_NAME}'. Name extraction will be disabled.")
+            self.ner = None
     
     def _run(self, query: str, user_name: str = "", user_email: str = "") -> str:
         """
@@ -133,7 +129,7 @@ class AppointmentTool(BaseTool):
     def _handle_new_booking(self, query: str, user_name: str, user_email: str) -> str:
         """Handle appointment booking requests."""
         if not user_name or not user_email:
-            return "To book an appointment, I need your name and email address. Please provide both."
+            return ERROR_MESSAGES["missing_user_info"]
         
         try:
             # Extract appointment details from query
@@ -368,6 +364,10 @@ class AppointmentTool(BaseTool):
     
     def _extract_provider_filter(self, query: str) -> Optional[str]: ### CHANGE
         """Extract provider name from query."""
+        if not self.ner:
+            logger.warning("SpaCy model not available for name extraction")
+            return None
+            
         try:
             doc = self.ner(query)
             names = []
@@ -444,17 +444,8 @@ class AppointmentTool(BaseTool):
                 return reason
     
         # Fallback: look for common cancellation keywords
-        cancellation_keywords = {
-            "sick": "User is feeling unwell",
-            "emergency": "Emergency situation",
-            "conflict": "Schedule conflict", 
-            "travel": "Travel conflict",
-            "work": "Work obligations",
-            "family": "Family matter"
-        }
-        
         query_lower = query.lower()
-        for keyword, default_reason in cancellation_keywords.items():
+        for keyword, default_reason in CANCELLATION_KEYWORDS.items():
             if keyword in query_lower:
                 return default_reason
         

@@ -365,17 +365,16 @@ class DatabaseClient:
             List of user's appointments
         """
         try:
-            query = {"client_info.email": user_email}
-            
+            # Use search_appointments for consistency
+            filters = {"client_info.email": user_email}
             if status_filter:
-                query["status"] = status_filter
+                filters["status"] = status_filter
             
-            cursor = self.appointments.find(query).sort("date", ASCENDING).limit(limit)
-            
-            results = []
-            for doc in cursor:
-                doc['_id'] = str(doc['_id'])
-                results.append(doc)
+            results = self.search_appointments(
+                date_range=None,
+                filters=filters,
+                limit=limit
+            )
             
             logger.info(f"Found {len(results)} appointments for {user_email}")
             return results
@@ -404,18 +403,24 @@ class DatabaseClient:
             True if available, False otherwise
         """
         try:
-            query = {
+            # Use search_appointments for consistency
+            filters = {
                 "date": date,
                 "time": time,
                 "status": "booked"
             }
             
             if provider:
-                query["provider"] = provider
+                filters["provider"] = provider
             
-            existing = self.appointments.find_one(query)
-            is_available = existing is None
+            # Check if any booked appointments exist at this time
+            existing = self.search_appointments(
+                date_range=None,
+                filters=filters,
+                limit=1
+            )
             
+            is_available = len(existing) == 0
             logger.debug(f"Availability check for {date} {time}: {'Available' if is_available else 'Booked'}")
             return is_available
             

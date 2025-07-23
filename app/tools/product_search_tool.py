@@ -6,6 +6,7 @@ from typing import Dict, List, Any, Optional
 from langchain_core.tools import BaseTool
 
 from app.tools.database_client import DatabaseClient
+from app.tools.tool_config import PRODUCT_CATEGORIES
 
 logger = logging.getLogger(__name__)
 
@@ -89,13 +90,9 @@ class ProductSearchTool(BaseTool):
     
     def _extract_category_filter(self, query: str) -> Optional[str]:
         """Extract category from query."""
-        categories = [
-            "electronics", "clothing", "books", "toys", "sports", "health", 
-            "beauty", "home", "automotive", "garden", "jewelry", "music"
-        ]
         query_lower = query.lower()
         
-        for category in categories:
+        for category in PRODUCT_CATEGORIES:
             if category in query_lower:
                 return category
         return None
@@ -118,8 +115,7 @@ class ProductSearchTool(BaseTool):
         cleaned = re.sub(r"\b(?:in stock|out of stock|available|unavailable|inventory)\b", "", cleaned, flags=re.IGNORECASE)
         
         # Remove category words (they're already captured in filters)
-        categories = ["electronics", "clothing", "books", "toys", "sports", "health", "beauty", "home"]
-        for category in categories:
+        for category in PRODUCT_CATEGORIES:
             cleaned = re.sub(rf"\b{category}\b", "", cleaned, flags=re.IGNORECASE)
         
         # Clean up extra spaces

@@ -2,7 +2,7 @@
 
 A sophisticated, production-ready open-source AI agent backend featuring cognitive science-inspired memory systems, intelligent tool usage, and comprehensive session management. Built for enterprise applications requiring persistent memory, natural language understanding, and seamless tool integration.
 
-![](docs/System_Architecture.png)
+![](docs/System_Architecture_overview.jpg)
 
 ## 🌟 Highlights
 
@@ -442,12 +442,6 @@ If you find this project helpful, please consider:
 - 🐛 Reporting bugs and issues
 - 💡 Suggesting new features
 - 🤝 Contributing code improvements
-
-## 📞 Contact
-
-- **Project Maintainer**: [Your Name](mailto:your.email@example.com)
-- **Issues**: [GitHub Issues](https://github.com/yourusername/dexter-conversational-ai-agent/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/dexter-conversational-ai-agent/discussions)
 
 ---
 

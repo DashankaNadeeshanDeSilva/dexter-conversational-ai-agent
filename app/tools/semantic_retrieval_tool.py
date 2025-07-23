@@ -43,7 +43,7 @@ class SemanticRetrievalTool(BaseTool):
             
             # Filter results by similarity threshold
             filtered_results = [
-                (doc, score) for doc, score in results if score >= similarity_threshold)
+                (doc, score) for doc, score in results if score >= similarity_threshold
             ]
             
             if not filtered_results:

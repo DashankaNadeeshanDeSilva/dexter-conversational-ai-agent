@@ -16,15 +16,22 @@ class MongoDBClient:
     
     def __init__(self):
         """Initialize MongoDB client."""
-        self.client = MongoClient(settings.MONGODB_URI)
-        self.db = self.client[settings.MONGODB_DATABASE]
-        self.conversations = self.db[settings.MONGODB_CONVERSATION_COLLECTION]
-        self.memory = self.db[settings.MONGODB_MEMORY_COLLECTION]
-        
-        # Create indexes for faster retrieval
-        self._setup_indexes()
-        
-        logger.info("MongoDB client initialized")
+        try:
+            # Create MongoDB client
+            self.client = MongoClient(settings.MONGODB_URI)
+            self.db = self.client[settings.MONGODB_DATABASE]
+            
+            # Initialize collections
+            self.conversations: Collection = self.db[settings.MONGODB_CONVERSATION_COLLECTION]
+            self.memory: Collection = self.db[settings.MONGODB_MEMORY_COLLECTION]
+            
+            # Create indexes for faster retrieval
+            self._setup_indexes()
+            
+            logger.info("MongoDB client initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize MongoDB client: {e}")
+            raise
     
     def _setup_indexes(self):
         """Set up indexes for faster retrieval."""

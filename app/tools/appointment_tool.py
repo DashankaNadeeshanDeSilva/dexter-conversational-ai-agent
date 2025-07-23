@@ -11,6 +11,21 @@ from app.tools.database_client import DatabaseClient
 
 logger = logging.getLogger(__name__)
 
+APPOINTMENT_SERVICE_TYPES = [
+    "consultation",
+    "checkup", 
+    "meeting",
+    "therapy",
+    "treatment",
+    "examination",
+    "follow-up",
+    "initial_visit",
+    "routine_checkup",
+    "emergency",
+    "telehealth",
+    "group_session"
+]
+
 class AppointmentTool(BaseTool):
     """Tool for managing appointments with full CRUD operations."""
     
@@ -21,6 +36,7 @@ class AppointmentTool(BaseTool):
         """Initialize the appointment management tool."""
         super().__init__(**kwargs)
         self.db_client = DatabaseClient()
+        self.ner = spacy.load("en_core_web_sm")
     
     def _run(self, query: str, user_name: str = "", user_email: str = "") -> str:
         """
@@ -342,41 +358,31 @@ class AppointmentTool(BaseTool):
     
     def _extract_service_filter(self, query: str) -> Optional[str]:
         """Extract service type from query."""
-        services = ["consultation", "checkup", "meeting", "therapy", "treatment", "examination"] ### maybe include service types in a config file
         query_lower = query.lower()
-        
-        for service in services:
+
+        for service in APPOINTMENT_SERVICE_TYPES:
             if service in query_lower:
                 return service
+        
         return None
     
     def _extract_provider_filter(self, query: str) -> Optional[str]: ### CHANGE
         """Extract provider name from query."""
-        """
-        # Look for "Mr."/"Mrs."/"Miss" or "with" patterns
-        dr_match = re.search(r"dr\.?\s+(\w+)", query, re.IGNORECASE)
-        if dr_match:
-            return f"Dr. {dr_match.group(1)}"
+        try:
+            doc = self.ner(query)
+            names = []
+            for ent in doc.ents:
+                if ent.label_ == "PERSON":
+                    names.append(ent.text)
+
+            match = ", ".join(names)
+            if match:
+                return match
+            
+            return None
         
-        with_match = re.search(r"with\s+(\w+(?:\s+\w+)?)", query, re.IGNORECASE)
-        if with_match:
-            return with_match.group(1)
-        """
-        ### Requiures more robustness abd sophesticated NLP to handle various name formats
-
-        ner = spacy.load("en_core_web_sm")
-        doc = ner(query)
-        names = []
-        for ent in doc.ents:
-            if ent.label_ == "PERSON":
-                names.append(ent.text)
-
-        match = ", ".join(names)
-        
-        if match:
-            return match
-
-        else:
+        except Exception as e:
+            logger.warning(f"NER extraction failed: {e}")
             return None
     
     def _extract_notes(self, query: str) -> Optional[str]:
@@ -396,32 +402,61 @@ class AppointmentTool(BaseTool):
     
     def _extract_appointment_id(self, query: str) -> Optional[str]:
         """Extract appointment ID from query."""
-        # Look for patterns like "appointment ABC123" or "ID: ABC123"
+        # Enhanced patterns for various ID formats
         id_patterns = [
-            r"appointment\s+([a-zA-Z0-9]{6,})",
-            r"id:?\s*([a-zA-Z0-9]{6,})",
-            r"confirmation\s+([a-zA-Z0-9]{6,})"
+            r"appointment\s+([a-zA-Z0-9]{6,24})",           # appointment ABC123456
+            r"id:?\s*([a-zA-Z0-9]{6,24})",                  # id: ABC123 or ID ABC123
+            r"confirmation\s+([a-zA-Z0-9]{6,24})",          # confirmation ABC123
+            r"reference\s+([a-zA-Z0-9]{6,24})",             # reference ABC123
+            r"booking\s+([a-zA-Z0-9]{6,24})",               # booking ABC123
+            r"#([a-zA-Z0-9]{6,24})",                        # #ABC123
+            r"([a-fA-F0-9]{24})",                           # MongoDB ObjectId (24 hex chars)
+            r"([a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12})",  # UUID format
+            r"([A-Z]{2,3}\d{4,8})",                         # APPT12345, REF123456
         ]
         
         for pattern in id_patterns:
             match = re.search(pattern, query, re.IGNORECASE)
             if match:
                 return match.group(1)
-        ### Add more robustness to handle and extract various ID formats
+        
         return None
     
     def _extract_cancellation_reason(self, query: str) -> Optional[str]:
         """Extract cancellation reason from query."""
         reason_patterns = [
-            r"because\s+(.+)",
-            r"reason:?\s*(.+)",
-            r"due to\s+(.+)"
+            r"because\s+(.+?)(?:\.|$)",                     # because I'm sick.
+            r"reason:?\s*(.+?)(?:\.|$)",                    # reason: emergency
+            r"due\s+to\s+(.+?)(?:\.|$)",                    # due to illness
+            r"since\s+(.+?)(?:\.|$)",                       # since I can't make it
+            r"as\s+(.+?)(?:\.|$)",                          # as I have conflict
+            r"note:?\s*(.+?)(?:\.|$)",                      # note: family emergency
+            r"explanation:?\s*(.+?)(?:\.|$)",               # explanation: work conflict
+            r"cancelled?\s+(?:because|due to|since)?\s*(.+?)(?:\.|$)",  # cancelled due to...
         ]
-        ### Add more robustness to handle various cancellation reason formats
         for pattern in reason_patterns:
-            match = re.search(pattern, query, re.IGNORECASE)
-            if match:
-                return match.group(1).strip()
+        match = re.search(pattern, query, re.IGNORECASE)
+        if match:
+            reason = match.group(1).strip()
+            # Clean up common artifacts
+            reason = re.sub(r'^(of|that|I|we|the)\s+', '', reason, flags=re.IGNORECASE)
+            if len(reason) > 3:  # Reasonable minimum length
+                return reason
+    
+        # Fallback: look for common cancellation keywords
+        cancellation_keywords = {
+            "sick": "User is feeling unwell",
+            "emergency": "Emergency situation",
+            "conflict": "Schedule conflict", 
+            "travel": "Travel conflict",
+            "work": "Work obligations",
+            "family": "Family matter"
+        }
+        
+        query_lower = query.lower()
+        for keyword, default_reason in cancellation_keywords.items():
+            if keyword in query_lower:
+                return default_reason
         
         return "User requested cancellation"
     

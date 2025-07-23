@@ -18,9 +18,10 @@ import pydantic
 
 from app.config import settings
 from app.memory.memory_manager import MemoryManager, MemoryType
-from app.tools.search_tool import SearchTool
+from app.tools.web_search_tool import WebSearchTool
 from app.tools.semantic_retrieval_tool import SemanticRetrievalTool
-from app.tools.database_retrieval_tool import DatabaseRetrievalTool
+from app.tools.product_search_tool import ProductSearchTool
+from app.tools.appointment_tool import AppointmentTool
 from app.agent.memory_utils import AgentMemoryUtils
 
 logger = logging.getLogger(__name__)
@@ -80,7 +81,8 @@ class ReActAgent:
         tools = [
             SearchTool(),
             SemanticRetrievalTool(),
-            DatabaseRetrievalTool()
+            ProductSearchTool(),
+            AppointmentTool()
         ]
         return tools
     

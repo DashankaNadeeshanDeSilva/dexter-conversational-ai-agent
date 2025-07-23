@@ -8,7 +8,7 @@ from duckduckgo_search import DDGS
 
 logger = logging.getLogger(__name__)
 
-class SearchTool(BaseTool):
+class WebSearchTool(BaseTool):
     """Tool for internet search using DuckDuckGo."""
     
     name = "internet_search"

@@ -43,3 +43,31 @@ Dont do any coding but discuss first !
 next step: 
 * Apply the  consoldation method at the end of the chat session not in the middle of the chat (not after every user-agent chat pair interaction but at the end of the chat)
 * 
+
+## Tools:
+
+### ProductSearchTool:
+✅ Product discovery - Find products by name, category, features
+✅ Price filtering - "under $100", "between $50-200"
+✅ Inventory checking - "in stock", "available"
+✅ Category browsing - "electronics", "clothing"
+✅ Specification search - "wireless headphones", "iPhone cases"
+
+### ProductSearchTool Capabilities:
+"Find wireless headphones under $100" → Price + category filtering
+"Show electronics in stock" → Category + availability filtering
+"Laptops between $500 and $1000" → Price range filtering
+
+### AppointmentTool:
+✅ Availability checking - "available appointments tomorrow"
+✅ Appointment booking - "schedule consultation with Dr. Smith"
+✅ Appointment modification - "reschedule my appointment"
+✅ Schedule viewing - "show Dr. Smith's schedule"
+✅ Cancellation - "cancel my appointment"
+
+### AppointmentTool Capabilities:
+"Book appointment tomorrow at 2pm" → Create appointment
+"Cancel appointment ABC12345" → Cancel with ID
+"Reschedule my appointment to Friday at 10am" → Update appointment
+"Show my appointments" → View user appointments
+"Available appointments next week" → Search availability

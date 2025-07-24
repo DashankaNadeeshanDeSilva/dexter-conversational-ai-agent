@@ -102,3 +102,9 @@ self.tools["weather_search"] = WeatherTool()
 # In app/config.py
 WEATHER_API_KEY: str = os.getenv("WEATHER_API_KEY")
 ```
+
+An open-source conversational AI agent backend with memory systems for enterprise applications.
+
+Sentence 2 (Technical Architecture): "Implemented a four-layer memory architecture (short-term, episodic, semantic, procedural) using ReAct framework with LangGraph, allowing the agent to learn preferences, remember interactions, and improve decision-making over time."
+
+Sentence 3 (Technology Stack): "Built with FastAPI, OpenAI GPT-4, MongoDB, and Pinecone, featuring Docker deployment, AWS ECS integration, and Prometheus monitoring for production-ready enterprise deployment."

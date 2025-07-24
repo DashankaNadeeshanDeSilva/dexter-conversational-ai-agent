@@ -4,6 +4,10 @@
 
 Dexter is a production-ready open-source AI agent backend designed for enterprise applications. Inspired by cognitive science, it integrates four human-like memory types—short-term, episodic, semantic, and procedural—to deliver contextual, adaptive, and personalized interactions. Going beyond typical chatbots, Dexter combines modern LLM reasoning with persistent memory, intelligent tool use, and robust session management to handle complex, multi-turn conversations with long-term learning capabilities.
 
+![](docs/System_Architecture_overview.jpg)
+
+**Detailed System Architecture Daigram: [here](docs/Detailed_system.png)**
+
 ## Motivation and Goals
 
 The motivation to build Dexter AI agent stems from the belief that conversational AI should feel more human-like - capable of adapting, remembering, learning from experience, and providing increasingly personalized assistance over time.

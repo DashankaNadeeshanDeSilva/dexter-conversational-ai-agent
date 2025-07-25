@@ -202,21 +202,7 @@ Dexter includes comprehensive monitoring capabilities:
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Development Guide](docs/DEVELOPMENT.md) for detailed information on:
-
-- Setting up your development environment
-- Code standards and best practices
-- Testing requirements
-- Pull request process
-
-### Quick contribution workflow:
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Make your changes and add tests
-4. Run tests: `make test`
-5. Commit your changes: `git commit -m 'Add amazing feature'`
-6. Push to the branch: `git push origin feature/amazing-feature`
-7. Open a Pull Request
+We welcome contributions! Please see our [Development Guide](docs/DEVELOPMENT.md) for detailed information.
 
 ## 📄 License
 

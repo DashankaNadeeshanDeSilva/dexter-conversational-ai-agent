@@ -1,5 +1,7 @@
 # API Reference
 
+**Note that this documentation is created with partial help of GenAI tools.**
+
 This document provides comprehensive documentation for all Dexter API endpoints, including request/response formats, authentication, and usage examples.
 
 ## Table of Contents

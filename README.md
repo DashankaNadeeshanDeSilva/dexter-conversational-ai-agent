@@ -3,11 +3,13 @@
 
 ## Introduction
 
-Dexter is a production-ready open-source AI agent backend designed for enterprise applications. Inspired by cognitive science, it integrates four human-like memory types—short-term, episodic, semantic, and procedural—to deliver contextual, adaptive, and personalized interactions. Going beyond typical chatbots, Dexter combines modern LLM reasoning with persistent memory, intelligent tool use, and robust session management to handle complex, multi-turn conversations with long-term learning capabilities.
+Dexter is a production-ready open-source AI agent backend designed for enterprise applications. It integrates four human-like memory types, short-term and long-term (episodic, semantic, and procedural) to deliver contextual, adaptive, and personalized interactions. Going beyond typical chatbots, Dexter combines LLM reasoning with persistent memory, and intelligent tool use to handle complex conversations.
+
+**[Read more about AI agent memory](https://dashankadesilva.medium.com/agentic-memory-how-ai-agents-learn-remember-and-improve-fd683c344685)**.
 
 ![](docs/System_Architecture_overview.jpg)
 
-**Detailed System Architecture Daigram: [here](docs/Detailed_system.png)**
+### [Detailed System Architecture ->](docs/Detailed_system.png)
 
 ## Motivation and Goals
 
@@ -148,7 +150,7 @@ dexter-conversational-ai-agent/
 ├── docs/                   # Documentation
 └── deployment/             # Docker and deployment configs
 ```
-Please refer [Detailed project Structure](docs/project_structure.md) for detailed information on:
+Please refer [Detailed project Structure](docs/project_structure.md) for detailed information.
 
 ### 2. [Memory System Details](docs/USAGE_EXAMPLES.md) to see how to introduce new tools to the agent.
 
@@ -217,6 +219,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Made with ❤️ by [Dashanka De Silva](https://github.com/dashankadesilva)**
+**Made with ❤️ by [Dashanka De Silva](https://www.linkedin.com/in/dashankadesilva/)**
 
 *Dexter - Because conversations should be intelligent, memorable, and personal.*

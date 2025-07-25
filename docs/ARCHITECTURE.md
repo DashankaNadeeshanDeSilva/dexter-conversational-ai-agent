@@ -1,5 +1,7 @@
 # Architecture Guide
 
+**Note that this documentation is created with partial help of GenAI tools.**
+
 This document provides a comprehensive deep dive into Dexter's system architecture, cognitive memory design principles, and component interactions.
 
 ## Table of Contents
@@ -16,29 +18,9 @@ This document provides a comprehensive deep dive into Dexter's system architectu
 
 Dexter's architecture is built around the concept of persistent, intelligent memory systems that mirror human cognitive processes. Unlike traditional stateless AI systems, Dexter maintains contextual awareness across sessions while continuously learning from interactions.
 
-### High-Level Architecture
+### System Architecture
 
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Client Apps   │───▶│   FastAPI       │───▶│   ReAct Agent   │
-│                 │    │   REST API      │    │   Framework     │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                                                        │
-                                                        ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Monitoring    │    │   Tool Router   │    │   Memory        │
-│   & Metrics     │    │   & Execution   │    │   Manager       │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                                │                       │
-                                ▼                       ▼
-                       ┌─────────────────┐    ┌─────────────────┐
-                       │   Tool Suite    │    │   Storage       │
-                       │   - Product     │    │   - MongoDB     │
-                       │   - Appointment │    │   - Pinecone    │
-                       │   - Semantic    │    │   - Redis       │
-                       │   - Web Search  │    │                 │
-                       └─────────────────┘    └─────────────────┘
-```
+![](Detailed_system.png)
 
 ### Core Components
 
@@ -422,9 +404,9 @@ class ToolRouter:
 
 ## Design Principles
 
-### 1. Cognitive Science Foundation
+### 1. Memory System Foundation
 
-All memory systems are based on established cognitive science research:
+All memory systems are based on established cognitive memory concepts:
 - **Episodic Memory**: Based on Tulving's episodic memory model
 - **Semantic Memory**: Implements semantic network theory
 - **Procedural Memory**: Follows skill acquisition and automation principles

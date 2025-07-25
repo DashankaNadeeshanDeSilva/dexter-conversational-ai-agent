@@ -1,5 +1,7 @@
 # Development Guide
 
+**Note that this documentation is created with partial help of GenAI tools.**
+
 This comprehensive guide covers everything you need to know about developing with, extending, and contributing to Dexter.
 
 ## Table of Contents

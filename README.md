@@ -1,15 +1,17 @@
 
 # 🤖 Dexter - Conversational AI Agent
 
-## Introduction
+## 01. Introduction
 
-Dexter is a production-ready open-source AI agent backend designed for enterprise applications. Inspired by cognitive science, it integrates four human-like memory types—short-term, episodic, semantic, and procedural—to deliver contextual, adaptive, and personalized interactions. Going beyond typical chatbots, Dexter combines modern LLM reasoning with persistent memory, intelligent tool use, and robust session management to handle complex, multi-turn conversations with long-term learning capabilities.
+Dexter is a production-ready open-source AI agent backend designed for enterprise applications. It integrates four human-like memory types, short-term and long-term (episodic, semantic, and procedural) to deliver contextual, adaptive, and personalized interactions. Going beyond typical chatbots, Dexter combines LLM reasoning with persistent memory, and intelligent tool use to handle complex conversations.
+
+**[Read more about AI agent memory](https://dashankadesilva.medium.com/agentic-memory-how-ai-agents-learn-remember-and-improve-fd683c344685)**.
 
 ![](docs/System_Architecture_overview.jpg)
 
-**Detailed System Architecture Daigram: [here](docs/Detailed_system.png)**
+### [Detailed System Architecture ->](docs/Detailed_system.png)
 
-## Motivation and Goals
+## 02. Motivation
 
 The motivation to build Dexter AI agent stems from the belief that conversational AI should feel more human-like - capable of adapting, remembering, learning from experience, and providing increasingly personalized assistance over time.
 
@@ -21,34 +23,34 @@ The motivation to build Dexter AI agent stems from the belief that conversationa
 - **Business Process Automation**: Intelligent agents that can handle complex, multi-step business workflows with memory of process states
 - **Research Assistance**: AI helpers that can maintain context across long research projects and remember relevant findings
 
-## Key Features
+## 03. Key Features
 
-### 🧠 Memory Systems
+### Memory Systems
 - **Short-term Memory**: Maintains conversation context within sessions
 - **Semantic Memory**: Stores and retrieves factual knowledge from conversations
 - **Episodic Memory**: Remembers specific interactions and experiences
 - **Procedural Memory**: Learns successful patterns and strategies over time
 
-### 🛠️ Tool Integration
+### Tool Integration
 - **Product Search**: Find products with smart filtering and recommendations
 - **Appointment Management**: Schedule, modify, and track appointments
 - **Semantic Retrieval**: Query stored knowledge and past conversations
 - **Extensible Architecture**: Easy to add custom tools for specific needs
 
-### 🎯 Personalized Experience
+### Personalized Experience
 - **User Preferences**: Learns and remembers individual user preferences
 - **Context Awareness**: Understands conversation flow and references
 - **Adaptive Responses**: Improves responses based on successful interactions
 - **Multi-session Continuity**: Maintains knowledge across multiple conversations
 
-## 📚 Documentation
+## 04. Core Components
 
-- **[Architecture Guide](docs/ARCHITECTURE.md)** - Dive into memory systems, cognitive design principles, and system architecture
-- **[API Reference](docs/API.md)** - Complete API documentation with examples and integration guides  
-- **[Deployment Guide](docs/DEPLOYMENT.md)** - Production setup, AWS deployment, monitoring, and configuration
-- **[Development Guide](docs/DEVELOPMENT.md)** - Contributing, extending tools, testing, and development workflow
+- **ReAct Agent**: The main reasoning engine that processes queries and coordinates responses
+- **Memory Manager**: Orchestrates all memory systems and provides unified context
+- **Tool Router**: Intelligently selects and executes appropriate tools
+- **Memory Systems**: Four specialized memory types for comprehensive context management
 
-## Quick Start
+## 05. Quick Start
 
 ### Prerequisites & Technology Stack
 
@@ -96,44 +98,13 @@ curl -X POST "http://localhost:8000/api/v1/chat" \
 ```
 Your Dexter agent will be running (locally) at `http://localhost:8000` and you can try using **Postman**.
 
-## TODO: **How to deploy into production**
 
-## 💬 Usage Examples: 
+## 06. Usage Examples: 
 Please refer [Usage Examples](docs/USAGE_EXAMPLES.md) to see how to use different functionalities
 
-## Core Components
+## 07. Development
 
-- **ReAct Agent**: The main reasoning engine that processes queries and coordinates responses
-- **Memory Manager**: Orchestrates all memory systems and provides unified context
-- **Tool Router**: Intelligently selects and executes appropriate tools
-- **Memory Systems**: Four specialized memory types for comprehensive context management
-
-## 🔧 Available Tools
-
-### 1. Product Search Tool
-Perfect for e-commerce and product discovery:
-- **Price filtering**: "Find laptops under $1000"
-- **Category browsing**: "Show me electronics"
-- **Feature search**: "Wireless headphones with noise cancellation"
-- **Inventory checking**: "What's available in stock?"
-
-### 2. Appointment Tool
-Comprehensive appointment management:
-- **Scheduling**: "Book appointment with Dr. Smith tomorrow at 2 PM"
-- **Availability**: "When is Dr. Johnson available next week?"
-- **Modifications**: "Reschedule my appointment to Friday"
-- **Cancellations**: "Cancel my appointment for tomorrow"
-
-### 3. Semantic Retrieval Tool
-Queries stored knowledge and memories:
-- **Fact retrieval**: "What did I say about my dietary preferences?"
-- **Context search**: "When did I last book an appointment?"
-- **Pattern discovery**: "What products have I been interested in?"
-
-### 4. Web Search Tool 
-Search quesy related information in the internet.
-
-## 🚀 Development
+Read more on Contributing, extending tools, testing, and development workflow, please refer to **[Development Guide](docs/DEVELOPMENT.md)**
 
 ### 1. Project Structure
 ```
@@ -148,14 +119,34 @@ dexter-conversational-ai-agent/
 ├── docs/                   # Documentation
 └── deployment/             # Docker and deployment configs
 ```
-Please refer [Detailed project Structure](docs/project_structure.md) for detailed information on:
+Please refer [Detailed project Structure](docs/project_structure.md) for detailed information.
 
-### 2. [Memory System Details](docs/USAGE_EXAMPLES.md) to see how to introduce new tools to the agent.
+### 2.Available Tools:
 
+***Product Search Tool***: Perfect for e-commerce and product discovery.
+- **Price filtering**: "Find laptops under $1000"
+- **Category browsing**: "Show me electronics"
+- **Feature search**: "Wireless headphones with noise cancellation"
+- **Inventory checking**: "What's available in stock?"
+
+***Appointment Tool***: Comprehensive appointment management.
+- **Scheduling**: "Book appointment with Dr. Smith tomorrow at 2 PM"
+- **Availability**: "When is Dr. Johnson available next week?"
+- **Modifications**: "Reschedule my appointment to Friday"
+- **Cancellations**: "Cancel my appointment for tomorrow"
+
+***Semantic Retrieval Tool***: Queries stored knowledge and memories.
+- **Fact retrieval**: "What did I say about my dietary preferences?"
+- **Context search**: "When did I last book an appointment?"
+- **Pattern discovery**: "What products have I been interested in?"
+
+***Web Search Tool***: Search quesy related information in the internet.
 
 ### 3. [Adding Custom Tools](docs/USAGE_EXAMPLES.md) to see how to introduce new tools to the agent.
 
-## Running Tests
+### 4. [Memory System Details](docs/USAGE_EXAMPLES.md) to see how to introduce new tools to the agent.
+
+## 08. Running Tests
 ```bash
 # Run all tests
 make test
@@ -169,7 +160,7 @@ pytest tests/integration/  # Integration tests
 pytest tests/e2e/         # End-to-end tests
 ```
 
-## 🐳 Docker Deployment
+## 09. Deployment
 
 ### Development
 ```bash
@@ -184,7 +175,16 @@ make docker-run
 docker-compose -f docker-compose.prod.yml up -d
 ```
 
-## 📈 Monitoring and Observability
+## 10. Documentation
+
+### For more details please refer to our comprehensive documentations
+- **[Architecture Guide](docs/ARCHITECTURE.md)** - Dive into memory systems, cognitive design principles, and system architecture
+- **[API Reference](docs/API.md)** - Complete API documentation with examples and integration guides  
+- **[Deployment Guide](docs/DEPLOYMENT.md)** - Production setup, AWS deployment, monitoring, and configuration
+- **[Development Guide](docs/DEVELOPMENT.md)** - Contributing, extending tools, testing, and development workflow
+
+
+## 11. Monitoring and Observability
 
 Dexter includes comprehensive monitoring capabilities:
 
@@ -193,22 +193,22 @@ Dexter includes comprehensive monitoring capabilities:
 - **Memory Analytics**: Memory system effectiveness and usage patterns
 - **User Analytics**: Conversation flows and user satisfaction metrics
 
-## 🔐 Security
+## 12. Security
 
 - **API Authentication**: Token-based authentication for all endpoints
 - **Input Validation**: Comprehensive input sanitization and validation
 - **Rate Limiting**: Protection against abuse and DoS attacks
 - **Data Privacy**: Secure handling of user data and conversations
 
-## 🤝 Contributing
+## 13. Contributing
 
 We welcome contributions! Please see our [Development Guide](docs/DEVELOPMENT.md) for detailed information.
 
-## 📄 License
+## 14. License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## 15. Acknowledgments
 
 - Built with [FastAPI](https://fastapi.tiangolo.com/) for high-performance APIs
 - Powered by [OpenAI](https://openai.com/) for language understanding
@@ -217,6 +217,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Made with ❤️ by [Dashanka De Silva](https://github.com/dashankadesilva)**
+**Made with ❤️ by [Dashanka De Silva](https://www.linkedin.com/in/dashankadesilva/)**
 
-*Dexter - Because conversations should be intelligent, memorable, and personal.*
+***Dexter - Because conversations should be intelligent, memorable, and personal.***

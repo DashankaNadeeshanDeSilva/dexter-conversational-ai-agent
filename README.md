@@ -50,32 +50,7 @@ The motivation to build Dexter AI agent stems from the belief that conversationa
 - **Tool Router**: Intelligently selects and executes appropriate tools
 - **Memory Systems**: Four specialized memory types for comprehensive context management
 
-## 05. Available Tools
-
-### 1. Product Search Tool
-Perfect for e-commerce and product discovery:
-- **Price filtering**: "Find laptops under $1000"
-- **Category browsing**: "Show me electronics"
-- **Feature search**: "Wireless headphones with noise cancellation"
-- **Inventory checking**: "What's available in stock?"
-
-### 2. Appointment Tool
-Comprehensive appointment management:
-- **Scheduling**: "Book appointment with Dr. Smith tomorrow at 2 PM"
-- **Availability**: "When is Dr. Johnson available next week?"
-- **Modifications**: "Reschedule my appointment to Friday"
-- **Cancellations**: "Cancel my appointment for tomorrow"
-
-### 3. Semantic Retrieval Tool
-Queries stored knowledge and memories:
-- **Fact retrieval**: "What did I say about my dietary preferences?"
-- **Context search**: "When did I last book an appointment?"
-- **Pattern discovery**: "What products have I been interested in?"
-
-### 4. Web Search Tool 
-Search quesy related information in the internet.
-
-## 06. Quick Start
+## 05. Quick Start
 
 ### Prerequisites & Technology Stack
 
@@ -124,10 +99,10 @@ curl -X POST "http://localhost:8000/api/v1/chat" \
 Your Dexter agent will be running (locally) at `http://localhost:8000` and you can try using **Postman**.
 
 
-## 07. Usage Examples: 
+## 06. Usage Examples: 
 Please refer [Usage Examples](docs/USAGE_EXAMPLES.md) to see how to use different functionalities
 
-## 08. Development
+## 07. Development
 
 Read more on Contributing, extending tools, testing, and development workflow, please refer to **[Development Guide](docs/DEVELOPMENT.md)**
 
@@ -146,12 +121,32 @@ dexter-conversational-ai-agent/
 ```
 Please refer [Detailed project Structure](docs/project_structure.md) for detailed information.
 
-### 2. [Memory System Details](docs/USAGE_EXAMPLES.md) to see how to introduce new tools to the agent.
+### 2.Available Tools:
 
+***Product Search Tool***: Perfect for e-commerce and product discovery.
+- **Price filtering**: "Find laptops under $1000"
+- **Category browsing**: "Show me electronics"
+- **Feature search**: "Wireless headphones with noise cancellation"
+- **Inventory checking**: "What's available in stock?"
+
+***Appointment Tool***: Comprehensive appointment management.
+- **Scheduling**: "Book appointment with Dr. Smith tomorrow at 2 PM"
+- **Availability**: "When is Dr. Johnson available next week?"
+- **Modifications**: "Reschedule my appointment to Friday"
+- **Cancellations**: "Cancel my appointment for tomorrow"
+
+***Semantic Retrieval Tool***: Queries stored knowledge and memories.
+- **Fact retrieval**: "What did I say about my dietary preferences?"
+- **Context search**: "When did I last book an appointment?"
+- **Pattern discovery**: "What products have I been interested in?"
+
+***Web Search Tool***: Search quesy related information in the internet.
 
 ### 3. [Adding Custom Tools](docs/USAGE_EXAMPLES.md) to see how to introduce new tools to the agent.
 
-## 09. Running Tests
+### 4. [Memory System Details](docs/USAGE_EXAMPLES.md) to see how to introduce new tools to the agent.
+
+## 08. Running Tests
 ```bash
 # Run all tests
 make test
@@ -165,7 +160,7 @@ pytest tests/integration/  # Integration tests
 pytest tests/e2e/         # End-to-end tests
 ```
 
-## 10. Deployment
+## 09. Deployment
 
 ### Development
 ```bash
@@ -180,7 +175,7 @@ make docker-run
 docker-compose -f docker-compose.prod.yml up -d
 ```
 
-## 11. Documentation
+## 10. Documentation
 
 ### For more details please refer to our comprehensive documentations
 - **[Architecture Guide](docs/ARCHITECTURE.md)** - Dive into memory systems, cognitive design principles, and system architecture
@@ -189,7 +184,7 @@ docker-compose -f docker-compose.prod.yml up -d
 - **[Development Guide](docs/DEVELOPMENT.md)** - Contributing, extending tools, testing, and development workflow
 
 
-## 12. Monitoring and Observability
+## 11. Monitoring and Observability
 
 Dexter includes comprehensive monitoring capabilities:
 
@@ -198,22 +193,22 @@ Dexter includes comprehensive monitoring capabilities:
 - **Memory Analytics**: Memory system effectiveness and usage patterns
 - **User Analytics**: Conversation flows and user satisfaction metrics
 
-## 13. Security
+## 12. Security
 
 - **API Authentication**: Token-based authentication for all endpoints
 - **Input Validation**: Comprehensive input sanitization and validation
 - **Rate Limiting**: Protection against abuse and DoS attacks
 - **Data Privacy**: Secure handling of user data and conversations
 
-## 14. Contributing
+## 13. Contributing
 
 We welcome contributions! Please see our [Development Guide](docs/DEVELOPMENT.md) for detailed information.
 
-## 15. License
+## 14. License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 16. Acknowledgments
+## 15. Acknowledgments
 
 - Built with [FastAPI](https://fastapi.tiangolo.com/) for high-performance APIs
 - Powered by [OpenAI](https://openai.com/) for language understanding

@@ -5,6 +5,10 @@
 
 Dexter is a production-ready open-source AI agent backend designed for enterprise applications. Inspired by cognitive science, it integrates four human-like memory types—short-term, episodic, semantic, and procedural—to deliver contextual, adaptive, and personalized interactions. Going beyond typical chatbots, Dexter combines modern LLM reasoning with persistent memory, intelligent tool use, and robust session management to handle complex, multi-turn conversations with long-term learning capabilities.
 
+![](docs/System_Architecture_overview.jpg)
+
+**Detailed System Architecture Daigram: [here](docs/Detailed_system.png)**
+
 ## Motivation and Goals
 
 The motivation to build Dexter AI agent stems from the belief that conversational AI should feel more human-like - capable of adapting, remembering, learning from experience, and providing increasingly personalized assistance over time.
@@ -198,21 +202,7 @@ Dexter includes comprehensive monitoring capabilities:
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Development Guide](docs/DEVELOPMENT.md) for detailed information on:
-
-- Setting up your development environment
-- Code standards and best practices
-- Testing requirements
-- Pull request process
-
-### Quick contribution workflow:
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Make your changes and add tests
-4. Run tests: `make test`
-5. Commit your changes: `git commit -m 'Add amazing feature'`
-6. Push to the branch: `git push origin feature/amazing-feature`
-7. Open a Pull Request
+We welcome contributions! Please see our [Development Guide](docs/DEVELOPMENT.md) for detailed information.
 
 ## 📄 License
 

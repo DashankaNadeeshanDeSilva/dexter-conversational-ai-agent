@@ -1,5 +1,5 @@
 """Core agent module."""
 
-from app.core.agent import ReActAgent
+from app.agent.agent import ReActAgent
 
 __all__ = ["ReActAgent"]

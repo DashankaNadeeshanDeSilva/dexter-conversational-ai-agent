@@ -13,7 +13,8 @@ from langchain_core.tools import BaseTool
 from langchain_core.output_parsers import StrOutputParser, JsonOutputParser
 from langchain_core.runnables import RunnablePassthrough, RunnableConfig
 from langgraph.graph import StateGraph, END
-from langgraph.prebuilt import ToolExecutor, ToolInvocation
+#from langgraph.prebuilt import ToolExecutor, ToolInvocation
+from langgraph.prebuilt import ToolNode 
 import pydantic
 
 from app.config import settings
@@ -69,7 +70,7 @@ class ReActAgent:
         
         # Set up tools
         self.tools = self._setup_tools()
-        self.tool_executor = ToolExecutor(self.tools)
+        self.tool_node = ToolNode(self.tools)
         
         # Set up the agent graph
         self.workflow = self._create_agent_graph()
@@ -79,7 +80,7 @@ class ReActAgent:
     def _setup_tools(self) -> List[BaseTool]:
         """Set up tools for the agent."""
         tools = [
-            SearchTool(),
+            WebSearchTool(),
             SemanticRetrievalTool(),
             ProductSearchTool(),
             AppointmentTool()
@@ -140,74 +141,100 @@ class ReActAgent:
         def use_tool(state: AgentState) -> AgentState:
             """Use a tool based on the agent's decision."""
             last_message = state.messages[-1]
+            last_messages_count = len(state.messages)
             
             if not hasattr(last_message, "tool_calls") or not last_message.tool_calls:
                 return state
+
+            try:
+                # Call ToolNode to execute tools and update state
+                updated_state = self.tool_node.invoke(state)
+
+                # Get latest tool result from FuntionMessage
+                tool_result_messages = [
+                    msg for msg in updated_state.messages[last_messages_count:]
+                    if isinstance(msg, FunctionMessage)
+                ]
+
+                # Get the original user query for context
+                human_messages = [msg for msg in updated_state.messages if isinstance(msg, HumanMessage)]
+                query_context = human_messages[-1].content if human_messages else ""
             
-            for tool_call in last_message.tool_calls:
-                action = tool_call.name
-                args = json.loads(tool_call.args)
-                
-                # Execute the tool
-                try:
-                    tool_result = self.tool_executor.execute(
-                        ToolInvocation(
-                            name=action,
-                            arguments=args
-                        )
-                    )
-                    
-                    # Add the tool (function) message to the state
-                    state.messages.append(
-                        FunctionMessage(
-                            name=action,
-                            content=str(tool_result)
-                        )
-                    )
+                for tool_result_message in tool_result_messages:
+                    tool_name = tool_result_message.name
+                    tool_result_content = tool_result_message.content
                     
                     # Store procedural memory about tool usage
-                    query_context = ""
-                    if state.messages:
-                        # Get the original user query for context
-                        human_messages = [msg for msg in state.messages if isinstance(msg, HumanMessage)]
-                        if human_messages:
-                            query_context = human_messages[-1].content
-                    
                     self.memory_manager.store_procedural_memory(
                         user_id=state.user_id,
                         content={
-                            "tool": action,
-                            "arguments": args,
-                            "result_summary": str(tool_result)[:100] + "...",
+                            "tool": tool_name,
+                            "result_summary": str(tool_result_content)[:100] + "...",
                             "query_context": query_context,
-                            "success": True,  # We'll track success vs failure
-                            "tool_selection_reason": f"Used {action} for query about: {query_context[:50]}..."
+                            "success": True, # We'll track success vs failure
+                            "tool_selection_reason": f"Used {tool_name} for query about: {query_context[:50]}..."
                         },
                         metadata={
-                            "conversation_id": state.conversation_id,
+                            "conversation_id": updated_state.conversation_id,
                             "timestamp": str(datetime.utcnow()),
                             "tool_category": "successful_usage"
                         }
                     )
-                    
-                except Exception as e:
-                    logger.error(f"Error executing tool {action}: {e}")
+                return updated_state
 
-                    # Add tool error message to the state
+            except Exception as e:
+                logger.error(f"Error executing tool(s): {e}")
+
+                # Attempt to extract tool/action info if possible
+                action = "unknown"
+                args = {}
+                last_message = state.messages[-1]
+
+                if hasattr(last_message, "tool_calls") and last_message.tool_calls:
+                    # If multiple tool calls, log all
+                    for tool_call in last_message.tool_calls:
+                        action = getattr(tool_call, "name", "unknown")
+                        try:
+                            args = json.loads(getattr(tool_call, "args", "{}"))
+                        except Exception:
+                            args = getattr(tool_call, "args", {})
+                        # Add tool error message to the state
+                        state.messages.append(
+                            FunctionMessage(
+                                name=action,
+                                content=f"Error executing tool: {str(e)}"
+                            )
+                        )
+                        # Store procedural memory about failed tool usage
+                        human_messages = [msg for msg in state.messages if isinstance(msg, HumanMessage)]
+                        query_context = human_messages[-1].content if human_messages else ""
+                        self.memory_manager.store_procedural_memory(
+                            user_id=state.user_id,
+                            content={
+                                "tool": action,
+                                "arguments": args,
+                                "error": str(e),
+                                "query_context": query_context,
+                                "success": False,
+                                "failure_reason": f"Tool {action} failed with error: {str(e)}"
+                            },
+                            metadata={
+                                "conversation_id": state.conversation_id,
+                                "timestamp": str(datetime.utcnow()),
+                                "tool_category": "failed_usage"
+                            }
+                        )
+
+                else:
+                    # No tool_calls info, just log generic failure
                     state.messages.append(
                         FunctionMessage(
                             name=action,
                             content=f"Error executing tool: {str(e)}"
                         )
                     )
-                    
-                    # Store procedural memory about failed tool usage
-                    query_context = ""
-                    if state.messages:
-                        human_messages = [msg for msg in state.messages if isinstance(msg, HumanMessage)]
-                        if human_messages:
-                            query_context = human_messages[-1].content
-                    
+                    human_messages = [msg for msg in state.messages if isinstance(msg, HumanMessage)]
+                    query_context = human_messages[-1].content if human_messages else ""
                     self.memory_manager.store_procedural_memory(
                         user_id=state.user_id,
                         content={
@@ -224,8 +251,8 @@ class ReActAgent:
                             "tool_category": "failed_usage"
                         }
                     )
-            
-            return state
+
+                return state
         
         # Create the ReAct agent graph
         workflow = StateGraph(AgentState)

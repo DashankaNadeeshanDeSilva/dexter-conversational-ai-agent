@@ -6,6 +6,7 @@ from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
 from langchain_core.tools import BaseTool
 import spacy
+from pydantic import PrivateAttr
 
 from app.tools.database_client import DatabaseClient
 from app.tools.tool_config import (
@@ -21,18 +22,21 @@ logger = logging.getLogger(__name__)
 class AppointmentTool(BaseTool):
     """Tool for managing appointments with full CRUD operations."""
     
-    name = "appointment_management"
-    description = "Manage appointments: search availability, book new, reschedule, cancel, and view appointments"
+    name: str = "appointment_management"
+    description: str = "Manage appointments: search availability, book new, reschedule, cancel, and view appointments"
+    _db_client: DatabaseClient = PrivateAttr()
+    _ner: Any = PrivateAttr()
+    
     
     def __init__(self, **kwargs):
         """Initialize the appointment management tool."""
         super().__init__(**kwargs)
-        self.db_client = DatabaseClient()
+        self._db_client = DatabaseClient()
         try:
-            self.ner = spacy.load(SPACY_MODEL_NAME)
+            self._ner = spacy.load(SPACY_MODEL_NAME)
         except OSError:
             logger.warning(f"Could not load SpaCy model '{SPACY_MODEL_NAME}'. Name extraction will be disabled.")
-            self.ner = None
+            self._ner = None
     
     def _run(self, query: str, user_name: str = "", user_email: str = "") -> str:
         """
@@ -110,7 +114,7 @@ class AppointmentTool(BaseTool):
                 filters["provider"] = {"$regex": provider_filter, "$options": "i"}
             
             # Search available appointments
-            results = self.db_client.search_appointments(
+            results = self._db_client.search_appointments(
                 date_range=date_range,
                 filters=filters,
                 limit=10
@@ -142,7 +146,7 @@ class AppointmentTool(BaseTool):
                 return "Please specify the date and time for your appointment (e.g., 'tomorrow at 2pm' or 'January 15th at 10:30am')."
             
             # Check availability first
-            is_available = self.db_client.check_availability(
+            is_available = self._db_client.check_availability(
                 date=date,
                 time=time,
                 provider=provider
@@ -152,7 +156,7 @@ class AppointmentTool(BaseTool):
                 return f"Unfortunately, {date} at {time} is not available. Please check available slots and choose a different time."
             
             # Create the appointment
-            appointment_id = self.db_client.create_appointment(
+            appointment_id = self._db_client.create_appointment(
                 user_name=user_name,
                 user_email=user_email,
                 date=date,
@@ -185,7 +189,7 @@ class AppointmentTool(BaseTool):
             elif "cancelled" in query.lower():
                 status_filter = "cancelled"
             
-            appointments = self.db_client.get_user_appointments(
+            appointments = self._db_client.get_user_appointments(
                 user_email=user_email,
                 status_filter=status_filter,
                 limit=10
@@ -212,7 +216,7 @@ class AppointmentTool(BaseTool):
             reason = self._extract_cancellation_reason(query)
             
             if appointment_id:
-                success = self.db_client.cancel_appointment(
+                success = self._db_client.cancel_appointment(
                     appointment_id=appointment_id,
                     user_email=user_email,
                     reason=reason
@@ -246,7 +250,7 @@ class AppointmentTool(BaseTool):
                 return "Please specify the new date and time for your appointment."
             
             # Check availability for new slot
-            is_available = self.db_client.check_availability(
+            is_available = self._db_client.check_availability(
                 date=new_date,
                 time=new_time
             )
@@ -255,7 +259,7 @@ class AppointmentTool(BaseTool):
                 return f"Unfortunately, {new_date} at {new_time} is not available. Please choose a different time."
             
             # Update the appointment
-            success = self.db_client.update_appointment(
+            success = self._db_client.update_appointment(
                 appointment_id=appointment_id,
                 user_email=user_email,
                 updates={
@@ -364,12 +368,12 @@ class AppointmentTool(BaseTool):
     
     def _extract_provider_filter(self, query: str) -> Optional[str]: ### CHANGE
         """Extract provider name from query."""
-        if not self.ner:
+        if not self._ner:
             logger.warning("SpaCy model not available for name extraction")
             return None
             
         try:
-            doc = self.ner(query)
+            doc = self._ner(query)
             names = []
             for ent in doc.ents:
                 if ent.label_ == "PERSON":
@@ -434,14 +438,15 @@ class AppointmentTool(BaseTool):
             r"explanation:?\s*(.+?)(?:\.|$)",               # explanation: work conflict
             r"cancelled?\s+(?:because|due to|since)?\s*(.+?)(?:\.|$)",  # cancelled due to...
         ]
+
         for pattern in reason_patterns:
-        match = re.search(pattern, query, re.IGNORECASE)
-        if match:
-            reason = match.group(1).strip()
-            # Clean up common artifacts
-            reason = re.sub(r'^(of|that|I|we|the)\s+', '', reason, flags=re.IGNORECASE)
-            if len(reason) > 3:  # Reasonable minimum length
-                return reason
+            match = re.search(pattern, query, re.IGNORECASE)
+            if match:
+                reason = match.group(1).strip()
+                # Clean up common artifacts
+                reason = re.sub(r'^(of|that|I|we|the)\s+', '', reason, flags=re.IGNORECASE)
+                if len(reason) > 3:  # Reasonable minimum length
+                    return reason
     
         # Fallback: look for common cancellation keywords
         query_lower = query.lower()

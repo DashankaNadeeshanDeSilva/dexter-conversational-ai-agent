@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class PineconeClient:
     """Pinecone client for semantic vector storage."""
     
-    def __init__(self, index_name: Optional[str] = settings.PINECONE_INDEX):
+    def __init__(self, index_name: Optional[str] = settings.PINECONE_MEMORY_INDEX):
         """Initialize Pinecone client."""
         self.api_key = settings.PINECONE_API_KEY
         self.environment = settings.PINECONE_ENVIRONMENT
@@ -52,12 +52,13 @@ class PineconeClient:
         if not self.pc.list_indexes().get("indexes") or self.index_name not in [idx["name"] for idx in self.pc.list_indexes().get("indexes", [])]:
             logger.info(f"Creating Pinecone index: {self.index_name}")
             
-            # Create index with dimensions for text-embedding-3-large
+            # Create index with dimensions for text-embedding-3-small
             self.pc.create_index(
                 name=self.index_name,
-                dimension=3072,  # Dimension for text-embedding-3-large
+                vector_type="dense",
+                dimension=512,  # Dimension for text-embedding-3-small
                 metric="cosine",
-                spec=PodSpec(environment=self.environment)
+                spec=ServerlessSpec(cloud="aws", region="us-east-1")
             )
             logger.info(f"Created Pinecone index: {self.index_name}")
         else:

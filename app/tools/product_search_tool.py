@@ -4,7 +4,7 @@ import logging
 import re
 from typing import Dict, List, Any, Optional
 from langchain_core.tools import BaseTool
-
+from pydantic import PrivateAttr
 from app.tools.database_client import DatabaseClient
 from app.tools.tool_config import PRODUCT_CATEGORIES
 
@@ -13,13 +13,14 @@ logger = logging.getLogger(__name__)
 class ProductSearchTool(BaseTool):
     """Tool for searching and discovering products in the database."""
     
-    name = "product_search"
-    description = "Search for products, check prices, inventory, and product information"
+    name: str = "product_search"
+    description: str = "Search for products, check prices, inventory, and product information"
+    _db_client: DatabaseClient = PrivateAttr() # Use PrivateAttr for Non-Pydantic Field
     
     def __init__(self, **kwargs):
         """Initialize the product search tool."""
         super().__init__(**kwargs)
-        self.db_client = DatabaseClient()
+        self._db_client = DatabaseClient()
     
     def _run(self, query: str, max_results: int = 5) -> str:
         """
@@ -51,7 +52,7 @@ class ProductSearchTool(BaseTool):
             search_text = self._clean_search_text(query)
             
             # Search products
-            results = self.db_client.search_products(
+            results = self._db_client.search_products(
                 query_text=search_text if search_text else None,
                 filters=filters if filters else None,
                 limit=max_results

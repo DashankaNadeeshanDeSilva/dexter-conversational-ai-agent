@@ -33,7 +33,7 @@ class MemoryManager:
         self.mongodb_client = MongoDBClient()
         self.pinecone_client = PineconeClient()
         self.short_term_memories = {}  # Map of session_id -> ShortTermMemory
-        self.session_manager = SessionManager(self.mongodb_client)
+        #self.session_manager = SessionManager(self.mongodb_client)
         self.semantic_extractor = SemanticExtractor()
         self.episodic_memory = EpisodicMemoryManager(self.mongodb_client)
         self.procedural_memory = ProceduralMemoryManager(self.mongodb_client)

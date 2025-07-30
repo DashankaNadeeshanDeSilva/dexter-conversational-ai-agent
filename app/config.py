@@ -21,7 +21,9 @@ class Settings(BaseSettings):
     # Pinecone Settings
     PINECONE_API_KEY: str = os.getenv("PINECONE_API_KEY", "")
     PINECONE_ENVIRONMENT: str = os.getenv("PINECONE_ENVIRONMENT", "")
-    PINECONE_INDEX: str = os.getenv("PINECONE_INDEX", "ai-agent-memory")
+    #PINECONE_INDEX: str = os.getenv("PINECONE_INDEX", "ai-agent-memory")
+    PINECONE_MEMORY_INDEX: str = os.getenv("PINECONE_MEMORY_INDEX", "dexter-memory")
+    PINECONE_KNOWLEDGE_INDEX: str = os.getenv("PINECONE_KNOWLEDGE_INDEX", "dexter-knowledge-base")
     
     # OpenAI Settings
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")

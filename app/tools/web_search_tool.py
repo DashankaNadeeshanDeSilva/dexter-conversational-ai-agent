@@ -3,7 +3,7 @@
 from typing import Dict, Any, Optional
 import logging
 from langchain_core.tools import BaseTool
-from langchain_core.pydantic_v1 import Field
+from pydantic import Field
 from duckduckgo_search import DDGS
 
 logger = logging.getLogger(__name__)
@@ -11,8 +11,8 @@ logger = logging.getLogger(__name__)
 class WebSearchTool(BaseTool):
     """Tool for internet search using DuckDuckGo."""
     
-    name = "internet_search"
-    description = "Search the internet for information about a query using DuckDuckGo"
+    name: str = "internet_search"
+    description: str = "Search the internet for information about a query using DuckDuckGo"
        
     def _run(self, query: str, max_results: int = 5) -> str:
         """Run the search tool."""

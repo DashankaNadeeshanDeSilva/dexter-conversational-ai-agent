@@ -126,7 +126,7 @@ async def chat(request: ChatRequest):
         # session_id: represents a unique interaction/context (within a conversation) for given user (supports short-term memory)
         session_id = request.session_id
         if not session_id:
-            session_id = memory_manager.session_manager.create_session(user_id, conversation_id)
+            session_id = memory_manager.create_session(user_id, conversation_id)
             logger.info(f"Created new session {session_id} for user {user_id}")
         
         # Process message with agent

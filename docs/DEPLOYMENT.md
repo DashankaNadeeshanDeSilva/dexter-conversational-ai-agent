@@ -615,7 +615,7 @@ except Exception as e:
 
 # Debug Pinecone connection
 docker-compose exec app python -c "
-from app.memory.pinecone_client import PineconeClient
+from app.db_clients.pinecone_client import PineconeClient
 try:
     client = PineconeClient()
     print('Pinecone: Connected')

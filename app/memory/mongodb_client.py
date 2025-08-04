@@ -34,7 +34,7 @@ class MongoDBClient:
             raise
     
     def _setup_indexes(self):
-        """Set up indexes for faster retrieval."""
+        """Set up indexes for conversation and memory managment."""
         # Index for conversations by user_id for quick user history retrieval
         self.conversations.create_index("user_id")
         

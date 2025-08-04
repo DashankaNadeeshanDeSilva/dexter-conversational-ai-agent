@@ -7,6 +7,7 @@ from datetime import datetime
 from pymongo.collection import Collection
 
 from app.memory.mongodb_client import MongoDBClient
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -21,8 +22,9 @@ class SessionManager:
             mongodb_client: MongoDB client for session persistence
         """
         self.mongodb_client = mongodb_client
+        self.mongodb_client = mongodb_client
         self.db = mongodb_client.db
-        self.sessions = self.db["sessions"]  # Session collection
+        self.sessions: Collection = self.db[settings.MONGODB_SESSION_COLLECTION]
         
         # Create indexes for efficient retrieval
         self._setup_indexes()
@@ -74,7 +76,7 @@ class SessionManager:
         
         try:
             self.sessions.insert_one(session_data)
-            logger.info(f"Created new session {session_id} for user {user_id}")
+            #logger.info(f"Created new session {session_id} for user {user_id}")
             return session_id
         except Exception as e:
             logger.error(f"Error creating session: {e}")

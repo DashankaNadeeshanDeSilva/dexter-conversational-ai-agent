@@ -177,9 +177,8 @@ class PineconeClient:
             logger.error(f"Error deleting memory {memory_id}: {e}")
             return False
     
-    def batch_insert(
+    def text_insert(
         self,
-        user_id: str,
         texts: List[str],
         metadatas: Optional[List[Dict[str, Any]]] = None
     ) -> List[str]:
@@ -187,9 +186,9 @@ class PineconeClient:
         Insert a batch of texts into semantic memory.
         
         Args:
-            user_id: User ID
+            #user_id: User ID
             texts: List of text contents
-            metadatas: Optional list of metadata dictionaries
+            metadatas: Optional list of metadata dictionaries including doc type, topic and more
             
         Returns:
             List of memory IDs
@@ -205,9 +204,8 @@ class PineconeClient:
             
             # Add user_id and timestamp to metadata
             metadata.update({
-                "user_id": user_id,
                 "timestamp": datetime.utcnow().isoformat(),
-                "type": "semantic_memory"
+                #"type": "semantic_memory"
             })
             
             documents.append(Document(

@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     MONGODB_URI: str = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
     MONGODB_DATABASE: str = os.getenv("MONGODB_DATABASE", "ai_agent")
     MONGODB_CONVERSATION_COLLECTION: str = os.getenv("MONGODB_CONVERSATION_COLLECTION", "conversations")
+    MONGODB_SESSION_COLLECTION: str = os.getenv("MONGODB_SESSION_COLLECTION", "sessions")
     MONGODB_MEMORY_COLLECTION: str = os.getenv("MONGODB_MEMORY_COLLECTION", "long_term_memory")
     
     # Pinecone Settings

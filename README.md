@@ -1,9 +1,9 @@
 
-# 🤖 Dexter - Conversational AI Agent
+# 🤖 Dexter - Conversational AI Agent for Customer Support Assistance
 
 ## 01. Introduction
 
-Dexter is a production-ready open-source AI agent backend designed for enterprise applications. It integrates four human-like memory types, short-term and long-term (episodic, semantic, and procedural) to deliver contextual, adaptive, and personalized interactions. Going beyond typical chatbots, Dexter combines LLM reasoning with persistent memory, and intelligent tool use to handle complex conversations.
+Dexter is a production-ready open-source AI agent backend designed for customer support assistance. It integrates four human-like memory types, short-term and long-term (episodic, semantic, and procedural) to deliver contextual, adaptive, and personalized interactions. Going beyond typical chatbots, Dexter combines LLM reasoning with persistent memory, and intelligent tool use to handle complex conversations.
 
 **[Read more about AI agent memory](https://dashankadesilva.medium.com/agentic-memory-how-ai-agents-learn-remember-and-improve-fd683c344685)**.
 
@@ -13,15 +13,7 @@ Dexter is a production-ready open-source AI agent backend designed for enterpris
 
 ## 02. Motivation
 
-The motivation to build Dexter AI agent stems from the belief that conversational AI should feel more human-like - capable of adapting, remembering, learning from experience, and providing increasingly personalized assistance over time.
-
-**Primary Use Cases:**
-- **Customer Support Services**: AI agents that remember customer history, preferences, and previous issues for more personalized support
-- **Personal Assistants**: Virtual assistants that learn user preferences, habits, and communication styles over time
-- **Healthcare Applications**: AI systems that maintain patient interaction history while respecting privacy requirements
-- **Educational Platforms**: Tutoring systems that adapt to individual learning styles and track long-term progress
-- **Business Process Automation**: Intelligent agents that can handle complex, multi-step business workflows with memory of process states
-- **Research Assistance**: AI helpers that can maintain context across long research projects and remember relevant findings
+The motivation to build Dexter customer support AI agent stems from the belief that interactions with customer support AI assistant should feel more human-like - capable of adapting, remembering, learning from customer history, preferences, and providing personalized assistance over time.
 
 ## 03. Key Features
 

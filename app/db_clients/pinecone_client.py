@@ -19,29 +19,25 @@ class PineconeClient:
     
     def __init__(self, index_name: Optional[str] = settings.PINECONE_MEMORY_INDEX):
         """Initialize Pinecone client."""
-        self.api_key = settings.PINECONE_API_KEY
-        self.environment = settings.PINECONE_ENVIRONMENT
         self.index_name = index_name
-        
-        # Initialize Pinecone
-        self.pc = Pinecone(api_key=self.api_key)
-        
-        # Check if index exists, if not create it
-        self._initialize_index()
-        
-        # Get index
-        self.index = self.pc.Index(self.index_name)
+        self.pc = Pinecone(api_key=settings.PINECONE_API_KEY)
         
         # Initialize OpenAI embeddings
         self.embeddings = OpenAIEmbeddings(
             model=settings.EMBEDDING_MODEL,
-            openai_api_key=settings.OPENAI_API_KEY
+            openai_api_key=settings.OPENAI_API_KEY,
+            dimensions=512
+            #spec=ServerlessSpec(cloud="aws", region="us-east-1")
         )
+
+        # Check if index exists, if not create it
+        self._initialize_index()
         
         # Initialize vector store
         self.vector_store = PineconeVectorStore(
-            index=self.index,
-            embedding=self.embeddings
+            index=self.pc.Index(self.index_name),
+            embedding=self.embeddings,
+            text_key="text"
         )
         
         logger.info("Pinecone client initialized")

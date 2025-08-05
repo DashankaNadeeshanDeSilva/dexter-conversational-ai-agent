@@ -20,7 +20,7 @@ import pydantic
 from app.config import settings
 from app.memory.memory_manager import MemoryManager, MemoryType
 from app.tools.web_search_tool import WebSearchTool
-from app.tools.semantic_retrieval_tool import SemanticRetrievalTool
+from app.tools.semantic_retrieval_tool import KnowledgeRetrievalTool
 from app.tools.product_search_tool import ProductSearchTool
 from app.tools.appointment_tool import AppointmentTool
 from app.agent.memory_utils import AgentMemoryUtils
@@ -81,7 +81,7 @@ class ReActAgent:
         """Set up tools for the agent."""
         tools = [
             WebSearchTool(),
-            SemanticRetrievalTool(),
+            KnowledgeRetrievalTool(),
             #ProductSearchTool(),
             #AppointmentTool()
         ]

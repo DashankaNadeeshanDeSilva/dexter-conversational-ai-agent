@@ -8,18 +8,19 @@ from datetime import datetime
 
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate, ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, FunctionMessage, BaseMessage
-from langchain_core.tools import BaseTool
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, FunctionMessage, BaseMessage, ToolMessage
+from langchain_core.tools import BaseTool, Tool
 from langchain_core.output_parsers import StrOutputParser, JsonOutputParser
 from langchain_core.runnables import RunnablePassthrough, RunnableConfig
 from langgraph.graph import StateGraph, END
-from langgraph.prebuilt import ToolExecutor, ToolInvocation
+#from langgraph.prebuilt import ToolExecutor, ToolInvocation
+from langgraph.prebuilt import ToolNode 
 import pydantic
 
 from app.config import settings
 from app.memory.memory_manager import MemoryManager, MemoryType
 from app.tools.web_search_tool import WebSearchTool
-from app.tools.semantic_retrieval_tool import SemanticRetrievalTool
+from app.tools.semantic_retrieval_tool import KnowledgeRetrievalTool
 from app.tools.product_search_tool import ProductSearchTool
 from app.tools.appointment_tool import AppointmentTool
 from app.agent.memory_utils import AgentMemoryUtils
@@ -69,7 +70,7 @@ class ReActAgent:
         
         # Set up tools
         self.tools = self._setup_tools()
-        self.tool_executor = ToolExecutor(self.tools)
+        self.tool_node = ToolNode(self.tools)
         
         # Set up the agent graph
         self.workflow = self._create_agent_graph()
@@ -79,10 +80,10 @@ class ReActAgent:
     def _setup_tools(self) -> List[BaseTool]:
         """Set up tools for the agent."""
         tools = [
-            SearchTool(),
-            SemanticRetrievalTool(),
-            ProductSearchTool(),
-            AppointmentTool()
+            WebSearchTool(),
+            KnowledgeRetrievalTool(),
+            #ProductSearchTool(),
+            #AppointmentTool()
         ]
         return tools
     
@@ -98,7 +99,7 @@ class ReActAgent:
                 
             if not hasattr(last_message, "tool_calls") or not last_message.tool_calls:
                 return "response"
-                
+
             return "use_tool"
         
         def think(state: AgentState) -> AgentState:
@@ -108,7 +109,7 @@ class ReActAgent:
                 f"- {tool.name}: {tool.description}" for tool in state.tools or []
             ]) 
             system_prompt = create_system_prompt(tool_descriptions=tool_descriptions)
-            
+
             # Create prompt with messages
             messages = [SystemMessage(content=system_prompt)] + state.messages
             
@@ -125,63 +126,79 @@ class ReActAgent:
                 # Insert combined memories into context (just after system message/prompt)
                 if memory_context != "No relevant information found in memory.":
                     messages.insert(1, SystemMessage(content=memory_context))
- 
-            # Get response from LLM
-            response = self.llm.invoke(
-                messages,
-                tool_choice="auto",
-                tools=[tool.to_pydantic_tool() for tool in state.tools] if state.tools else None
+
+            # Bind tools to the LLM
+            llm_with_tools = self.llm.bind_tools(
+                tools=state.tools,
+                tool_choice="auto"
             )
-            
-            # Update the messages
+
+            # Get response from LLM
+            response = llm_with_tools.invoke(messages)
+
+            # Update the state
             state.messages.append(response)
+
             return state
         
         def use_tool(state: AgentState) -> AgentState:
             """Use a tool based on the agent's decision."""
             last_message = state.messages[-1]
+            last_messages_count = len(state.messages)
             
             if not hasattr(last_message, "tool_calls") or not last_message.tool_calls:
                 return state
+
+            try:
+                # Convert AgentState to dict for ToolNode
+                state_dict = {
+                    "messages": state.messages,
+                    "user_id": state.user_id,
+                    "conversation_id": state.conversation_id,
+                    "session_id": state.session_id,
+                    "tools": state.tools,
+                    "tool_names": state.tool_names
+                }
+
+                # Call ToolNode to execute tools and update state
+                tool_result = self.tool_node.invoke(state_dict) # input state as a dict
+
+                # Merge tool results into the state
+                if isinstance(tool_result, dict) and "messages" in tool_result:
+                    state.messages.extend(tool_result["messages"])
+                else:
+                    logger.error(f"Unexpected tool result format: {type(tool_result_dict)}")
+                    return state
+
+                # Get and store tool activities in procedural memory #
+                tool_result_messages = [
+                    msg for msg in state.messages[last_messages_count:]
+                    if isinstance(msg, ToolMessage)
+                ]
+
+                # Get the original user query for context
+                human_messages = [msg for msg in state.messages if isinstance(msg, HumanMessage)]
+                query_context = human_messages[-1].content if human_messages else ""
             
-            for tool_call in last_message.tool_calls:
-                action = tool_call.name
-                args = json.loads(tool_call.args)
-                
-                # Execute the tool
-                try:
-                    tool_result = self.tool_executor.execute(
-                        ToolInvocation(
-                            name=action,
-                            arguments=args
-                        )
-                    )
-                    
-                    # Add the tool (function) message to the state
-                    state.messages.append(
-                        FunctionMessage(
-                            name=action,
-                            content=str(tool_result)
-                        )
+                for tool_result_message in tool_result_messages:
+                    tool_name = tool_result_message.name
+                    tool_result_content = tool_result_message.content
+
+                    # Store tool acttvity in session
+                    self.memory_manager.session_manager.update_session_activity(
+                        state.session_id,
+                        f"used_tool_{tool_name}"
                     )
                     
                     # Store procedural memory about tool usage
-                    query_context = ""
-                    if state.messages:
-                        # Get the original user query for context
-                        human_messages = [msg for msg in state.messages if isinstance(msg, HumanMessage)]
-                        if human_messages:
-                            query_context = human_messages[-1].content
-                    
                     self.memory_manager.store_procedural_memory(
                         user_id=state.user_id,
                         content={
-                            "tool": action,
-                            "arguments": args,
-                            "result_summary": str(tool_result)[:100] + "...",
+                            "tool": tool_name,
+                            "result_summary": str(tool_result_content)[:100] + "...",
                             "query_context": query_context,
-                            "success": True,  # We'll track success vs failure
-                            "tool_selection_reason": f"Used {action} for query about: {query_context[:50]}..."
+                            "success": True, # We'll track success vs failure
+                            "tool_selection_reason": f"Used {tool_name} for query about: {query_context[:50]}..."
                         },
                         metadata={
                             "conversation_id": state.conversation_id,
@@ -189,25 +206,63 @@ class ReActAgent:
                             "tool_category": "successful_usage"
                         }
                     )
-                    
-                except Exception as e:
-                    logger.error(f"Error executing tool {action}: {e}")
 
-                    # Add tool error message to the state
+                return state
+
+            except Exception as e:
+                logger.error(f"Error executing tool(s): {e}")
+
+                # Attempt to extract tool/action info if possible
+                last_message = state.messages[-1]
+                if hasattr(last_message, "tool_calls") and last_message.tool_calls:
+                    # If multiple tool calls, log all
+                    for tool_call in last_message.tool_calls:
+                        tool_action = getattr(tool_call, "name", "unknown")
+                        
+                        try:
+                            args = json.loads(getattr(tool_call, "args", "{}"))
+                        except Exception:
+                            args = getattr(tool_call, "args", {})
+                        
+                        # Add tool error message to the state
+                        state.messages.append(
+                            ToolMessage(
+                                content=f"Error executing tool: {str(e)}",
+                                name=tool_action,
+                                tool_call_id=tool_call.id if hasattr(tool_call, "id") else "unknown"
+                            )
+                        )
+
+                        # Store procedural memory about failed tool usage
+                        human_messages = [msg for msg in state.messages if isinstance(msg, HumanMessage)]
+                        query_context = human_messages[-1].content if human_messages else ""
+                        self.memory_manager.store_procedural_memory(
+                            user_id=state.user_id,
+                            content={
+                                "tool": tool_action,
+                                "arguments": args,
+                                "error": str(e),
+                                "query_context": query_context,
+                                "success": False,
+                                "failure_reason": f"Tool {tool_action} failed with error: {str(e)}"
+                            },
+                            metadata={
+                                "conversation_id": state.conversation_id,
+                                "timestamp": str(datetime.utcnow()),
+                                "tool_category": "failed_usage"
+                            }
+                        )
+                '''
+                else:
+                    # No tool_calls info, just log generic failure
                     state.messages.append(
                         FunctionMessage(
                             name=action,
                             content=f"Error executing tool: {str(e)}"
                         )
                     )
-                    
-                    # Store procedural memory about failed tool usage
-                    query_context = ""
-                    if state.messages:
-                        human_messages = [msg for msg in state.messages if isinstance(msg, HumanMessage)]
-                        if human_messages:
-                            query_context = human_messages[-1].content
-                    
+                    human_messages = [msg for msg in state.messages if isinstance(msg, HumanMessage)]
+                    query_context = human_messages[-1].content if human_messages else ""
                     self.memory_manager.store_procedural_memory(
                         user_id=state.user_id,
                         content={
@@ -224,8 +279,9 @@ class ReActAgent:
                             "tool_category": "failed_usage"
                         }
                     )
-            
-            return state
+                '''
+
+                return state
         
         # Create the ReAct agent graph
         workflow = StateGraph(AgentState)
@@ -272,7 +328,7 @@ class ReActAgent:
             Agent response
         """
         # Update session activity for user message
-        #self.memory_manager.session_manager.update_session_activity(session_id, "message")
+        self.memory_manager.session_manager.update_session_activity(session_id, "message")
         
         # Get short-term memory or initialize it
         short_term_memory = self.memory_manager.get_short_term_memory(session_id)
@@ -299,13 +355,16 @@ class ReActAgent:
             tools=self.tools,
             tool_names=[tool.name for tool in self.tools]
         )
-        
+
         # Run the agent
         try:
             result = self.workflow.invoke(state)
-            
+
             # Extract AI message
-            ai_messages = [msg for msg in result.messages if isinstance(msg, AIMessage)]
+            if isinstance(result, dict):
+                ai_messages = [msg for msg in result.get("messages") if isinstance(msg, AIMessage)]
+            else:
+                ai_messages = [msg for msg in result.messages if isinstance(msg, AIMessage)]
             
             if not ai_messages:
                 response = "I'm sorry, I wasn't able to generate a proper response."
@@ -353,16 +412,16 @@ class ReActAgent:
                         }
                     )
                     logger.info(f"Stored {len(extracted_facts)} semantic facts for user {user_id}")
-            
+
             ## Procedural Memory Storage
             # Store successful interaction pattern in procedural memory if response was generated successfully
             if response and response != "I'm sorry, I wasn't able to generate a proper response.":
                 # Determine the pattern type based on tools used
                 tool_calls_made = []
-                for msg in result.messages:
+                for msg in result.get("messages"):
                     if isinstance(msg, AIMessage) and hasattr(msg, "tool_calls") and msg.tool_calls:
                         for tool_call in msg.tool_calls:
-                            tool_calls_made.append(tool_call.name)
+                            tool_calls_made.append(tool_call["name"])
                 
                 pattern_type = "direct_response" if not tool_calls_made else f"tool_assisted_{'+'.join(tool_calls_made)}"
                 

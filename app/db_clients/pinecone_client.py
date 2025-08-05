@@ -17,31 +17,27 @@ logger = logging.getLogger(__name__)
 class PineconeClient:
     """Pinecone client for semantic vector storage."""
     
-    def __init__(self, index_name: Optional[str] = settings.PINECONE_INDEX):
+    def __init__(self, index_name: Optional[str] = settings.PINECONE_MEMORY_INDEX):
         """Initialize Pinecone client."""
-        self.api_key = settings.PINECONE_API_KEY
-        self.environment = settings.PINECONE_ENVIRONMENT
         self.index_name = index_name
-        
-        # Initialize Pinecone
-        self.pc = Pinecone(api_key=self.api_key)
-        
-        # Check if index exists, if not create it
-        self._initialize_index()
-        
-        # Get index
-        self.index = self.pc.Index(self.index_name)
+        self.pc = Pinecone(api_key=settings.PINECONE_API_KEY)
         
         # Initialize OpenAI embeddings
         self.embeddings = OpenAIEmbeddings(
             model=settings.EMBEDDING_MODEL,
-            openai_api_key=settings.OPENAI_API_KEY
+            openai_api_key=settings.OPENAI_API_KEY,
+            dimensions=512
+            #spec=ServerlessSpec(cloud="aws", region="us-east-1")
         )
+
+        # Check if index exists, if not create it
+        self._initialize_index()
         
         # Initialize vector store
         self.vector_store = PineconeVectorStore(
-            index=self.index,
-            embedding=self.embeddings
+            index=self.pc.Index(self.index_name),
+            embedding=self.embeddings,
+            text_key="text"
         )
         
         logger.info("Pinecone client initialized")
@@ -52,12 +48,13 @@ class PineconeClient:
         if not self.pc.list_indexes().get("indexes") or self.index_name not in [idx["name"] for idx in self.pc.list_indexes().get("indexes", [])]:
             logger.info(f"Creating Pinecone index: {self.index_name}")
             
-            # Create index with dimensions for text-embedding-3-large
+            # Create index with dimensions for text-embedding-3-small
             self.pc.create_index(
                 name=self.index_name,
-                dimension=3072,  # Dimension for text-embedding-3-large
+                vector_type="dense",
+                dimension=512,  # Dimension for text-embedding-3-small
                 metric="cosine",
-                spec=PodSpec(environment=self.environment)
+                spec=ServerlessSpec(cloud="aws", region="us-east-1")
             )
             logger.info(f"Created Pinecone index: {self.index_name}")
         else:
@@ -176,9 +173,8 @@ class PineconeClient:
             logger.error(f"Error deleting memory {memory_id}: {e}")
             return False
     
-    def batch_insert(
+    def text_insert(
         self,
-        user_id: str,
         texts: List[str],
         metadatas: Optional[List[Dict[str, Any]]] = None
     ) -> List[str]:
@@ -186,9 +182,9 @@ class PineconeClient:
         Insert a batch of texts into semantic memory.
         
         Args:
-            user_id: User ID
+            #user_id: User ID
             texts: List of text contents
-            metadatas: Optional list of metadata dictionaries
+            metadatas: Optional list of metadata dictionaries including doc type, topic and more
             
         Returns:
             List of memory IDs
@@ -204,9 +200,8 @@ class PineconeClient:
             
             # Add user_id and timestamp to metadata
             metadata.update({
-                "user_id": user_id,
                 "timestamp": datetime.utcnow().isoformat(),
-                "type": "semantic_memory"
+                #"type": "semantic_memory"
             })
             
             documents.append(Document(

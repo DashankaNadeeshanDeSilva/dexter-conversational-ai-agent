@@ -7,7 +7,7 @@ from typing import List, Dict, Any
 import pymongo
 
 from app.memory.mongodb_client import MongoDBClient
-from app.memory.pinecone_client import PineconeClient
+from app.db_clients.pinecone_client import PineconeClient
 
 
 class TestMongoDBClient:

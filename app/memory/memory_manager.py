@@ -9,7 +9,7 @@ from langchain_core.documents import Document
 from langchain_core.messages import BaseMessage
 
 from app.memory.mongodb_client import MongoDBClient
-from app.memory.pinecone_client import PineconeClient
+from app.db_clients.pinecone_client import PineconeClient
 from app.memory.short_term_memory import ShortTermMemory
 from app.memory.session_manager import SessionManager
 from app.memory.semantic_extractor import SemanticExtractor
@@ -239,6 +239,10 @@ class MemoryManager:
     def create_conversation(self, user_id: str) -> str:
         """Create a new conversation and return its ID."""
         return self.mongodb_client.create_conversation(user_id)
+
+    def create_session (self, user_id: str, session_id: str) -> str:
+        """Create a new session for a user."""
+        return self.session_manager.create_session(user_id, session_id)
     
     def add_message_to_conversation(
         self, 

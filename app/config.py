@@ -16,17 +16,20 @@ class Settings(BaseSettings):
     MONGODB_URI: str = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
     MONGODB_DATABASE: str = os.getenv("MONGODB_DATABASE", "ai_agent")
     MONGODB_CONVERSATION_COLLECTION: str = os.getenv("MONGODB_CONVERSATION_COLLECTION", "conversations")
+    MONGODB_SESSION_COLLECTION: str = os.getenv("MONGODB_SESSION_COLLECTION", "sessions")
     MONGODB_MEMORY_COLLECTION: str = os.getenv("MONGODB_MEMORY_COLLECTION", "long_term_memory")
     
     # Pinecone Settings
     PINECONE_API_KEY: str = os.getenv("PINECONE_API_KEY", "")
     PINECONE_ENVIRONMENT: str = os.getenv("PINECONE_ENVIRONMENT", "")
-    PINECONE_INDEX: str = os.getenv("PINECONE_INDEX", "ai-agent-memory")
+    #PINECONE_INDEX: str = os.getenv("PINECONE_INDEX", "ai-agent-memory")
+    PINECONE_MEMORY_INDEX: str = os.getenv("PINECONE_MEMORY_INDEX", "dexter-memory")
+    PINECONE_KNOWLEDGE_INDEX: str = os.getenv("PINECONE_KNOWLEDGE_INDEX", "dexter-knowledge-base")
     
     # OpenAI Settings
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
     OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-4-turbo")
-    EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "text-embedding-3-large")
+    EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
     EMBEDDINGS_BATCH_SIZE: int = int(os.getenv("EMBEDDINGS_BATCH_SIZE", "100"))
     
     # LangChain Settings

@@ -7,7 +7,7 @@ Dexter is a production-ready open-source AI agent backend designed for enterpris
 
 **[Read more about AI agent memory](https://dashankadesilva.medium.com/agentic-memory-how-ai-agents-learn-remember-and-improve-fd683c344685)**.
 
-![](docs/System_Architecture_overview.jpg)
+![](docs/System_Architecture_overview.jpeg)
 
 **[Detailed System Architecture](docs/Detailed_system.png)**
 

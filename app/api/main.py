@@ -156,6 +156,28 @@ async def chat(request: ChatRequest):
             detail=f"Error processing chat: {str(e)}"
         )
 
+# Create new conversation
+@app.post("/conversations/create_new", tags=["conversations"])
+async def create_conversation(request: dict):
+    try:
+        user_id = request.get("user_id")
+        conversation_id = memory_manager.create_conversation(user_id)
+        logger.info(f"Created new conversation {conversation_id} for user {user_id}")
+
+        return {
+            "user_id": user_id,
+            "conversation_id": conversation_id,
+            "created_at": datetime.utcnow().isoformat(),
+            "updated_at": datetime.utcnow().isoformat(),
+            "messages": []
+        }
+    except Exception as e:
+        logger.error(f"Error creating conversation: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error creating conversation: {str(e)}"
+        )    
+
 # Get conversations (all) for user
 @app.get(
     "/conversations/{user_id}", 

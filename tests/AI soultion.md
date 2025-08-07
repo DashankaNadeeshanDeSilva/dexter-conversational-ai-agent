@@ -77,3 +77,32 @@ HTTP response headers: HTTPHeaderDict({'date': 'Mon, 04 Aug 2025 16:11:20 GMT', 
 HTTP response body: {"code":3,"message":"Vector dimension 1536 does not match the dimension of the index 512","details":[]}
 
 (dexter) dashankadesilva@Dashankas-MacBook-Air-4 dexter-conversational-ai-agent % 
+
+
+
+### About Stellartech GmBH
+Stellartech GmBH is a leading provider of consumer electronics and smart home devices based in Berlin, Germany. We specialize in innovative tech products as well as on-site installation and consultation services. Our mission is to make technology more accessible, secure, and reliable for our customers.
+
+### Getting Services for House Installation
+
+For home installation tasks, we offer the following services:
+1. **In-Home Installation**
+  - **Description:** On-site setup for all purchased products.
+  - **Duration:** 1–2 hours.   
+  - **Price:** Starting from €49.00.  
+  - **Appointment Required.**
+    
+2. **Tech Consultation & Home Automation Planning**
+  - **Description:** Expert visit to recommend automation solutions.
+  - **Price:** €79/hour.
+  - **Available Online or In-Person.**
+  - You can book these services through our website at [appointments.stellartech.de](http://appointments.stellartech.de).
+  
+### Contact Information
+If you need further assistance or wish to schedule a service, feel free to contact us:
+- **Phone:** +49 30 1234 5678
+- **Email:** [support@stellartech.de](mailto:support@stellartech.de)
+- **Business Hours:** Mon–Fri 9:00–18:00 CET
+- **Website:** [www.stellartech.de](http://www.stellartech.de)
+
+If you have any more questions or need assistance, feel free to ask!

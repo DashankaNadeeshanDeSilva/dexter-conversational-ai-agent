@@ -113,7 +113,7 @@ dexter-conversational-ai-agent/
 ```
 Please refer [Detailed project Structure](docs/project_structure.md) for detailed information.
 
-### 2.Available Tools:
+### 2. Available Tools:
 
 ***Product Search Tool***: Perfect for e-commerce and product discovery.
 - **Price filtering**: "Find laptops under $1000"

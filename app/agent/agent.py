@@ -82,8 +82,8 @@ class ReActAgent:
         tools = [
             WebSearchTool(),
             KnowledgeRetrievalTool(),
-            #ProductSearchTool(),
-            #AppointmentTool()
+            ProductSearchTool(),
+            AppointmentTool()
         ]
         return tools
     

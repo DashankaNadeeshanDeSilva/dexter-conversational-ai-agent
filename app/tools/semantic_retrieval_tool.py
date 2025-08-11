@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 #pinecone_client = PineconeClient(settings.PINECONE_KNOWLEDGE_INDEX)
 
 class RetrievalInput(BaseModel):
-    """Input schema for semantic retrival tool)"""
+    """Input schema for semantic retrival tool"""
     query: str = Field(..., description="The search query to find relevent semantic knowledge")
     max_results: int = Field(default=5, description="Maximum number of semantic seaech results to return")
     similarity_threshold: float = Field(default=0.7, description="Minumum similarity score threshold")
@@ -23,20 +23,10 @@ class KnowledgeRetrievalTool(BaseTool):
     
     name: str = "company_knowledge_retrieval"
     description: str = "Search the company's internal knowledge base for information about products, services, policies, and company details. Use this to search for company-specific information."
-    #"Search knowledge base to get information about the company, business, product and sales, and more "
-
     args_schema: Type[BaseModel] = RetrievalInput
     
     def _run(self, query: str, max_results: int = 5, similarity_threshold: float = 0.3, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
-        """Run the semantic retrieval tool.
-        Args:
-            query: The search query
-            max_results: Maximum number of results to return
-            similarity_threshold: Minimum similarity score threshold
-            
-        Returns:
-            Formatted string with relevant semantic knowledge
-        """ 
+        """Run the semantic retrieval tool.""" 
         try:
             # Initialize Pinecone client
             pinecone_client = PineconeClient(settings.PINECONE_KNOWLEDGE_INDEX)

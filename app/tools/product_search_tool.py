@@ -2,81 +2,76 @@
 
 import logging
 import re
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Type
 from langchain_core.tools import BaseTool, Tool
+from pydantic import BaseModel, Field
+from langchain_core.callbacks import CallbackManagerForToolRun
 from pydantic import PrivateAttr
 from app.tools.database_client import DatabaseClient
 from app.tools.tool_config import PRODUCT_CATEGORIES
 
 logger = logging.getLogger(__name__)
 
-NAME: str = "product_search"   
-DESCRIPTION: str = "Search for products, check prices, inventory, and product information"
+# Initialize database client
+try:        
+    _DB_CLIENT = DatabaseClient()
+except Exception as e:
+    logger.error(f"Failed to initialize Database client at import: {e}")
+    _DB_CLIENT = None    
 
-class ProductSearchTool(Tool):
+class ProductSearchInput(BaseModel):
+    """Input schema for product search tool"""
+    query: str = Field(..., description="The search query to find products from the database")
+    max_results: int = Field(default=5, description="Maximum number of products results to return")
+
+class ProductSearchTool(BaseTool):
     """Tool for searching and discovering products in the database."""
     
     name: str = "product_search"
-    description: str = "Search for products, check prices, inventory, and product information"
-    
-    def __init__(self, max_results: int = 5, **kwargs):
+    description: str = "Search for products, check prices, inventory, and product information from the the product database"
+    args_schema: Type[BaseModel] = ProductSearchInput
 
-        # Initialize database client
-        db_client = DatabaseClient()
+    def _run(query: str, max_results: int = 5, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
+        """Execute product search based on query."""
+        try:
+            if _DB_CLIENT is None:
+                return "Product Database is not available right now."
 
-        def product_search_tool(query: str) -> str:
-            """
-            Execute product search based on query.
+            # Extract filters from query using class methods
+            price_filter = _extract_price_filter(query)
+            category_filter = _extract_category_filter(query)
+            availability_filter = _extract_availability_filter(query)
             
-            Args:
-                query: Natural language search query for products
-                max_results: Maximum number of results to return
-                
-            Returns:
-                Formatted string with product search results
-            """
-            try:
-                # Extract filters from query using class methods
-                price_filter = _extract_price_filter(query)
-                category_filter = _extract_category_filter(query)
-                availability_filter = _extract_availability_filter(query)
-                
-                # Build filters
-                filters = {}
-                if price_filter:
-                    filters.update(price_filter)
-                if category_filter:
-                    filters["category"] = {"$regex": category_filter, "$options": "i"}
-                if availability_filter:
-                    filters["inventory.availability"] = availability_filter
-                
-                # Extract clean search text
-                search_text =_clean_search_text(query)
-                
-                # Search products
-                results = db_client.search_products(
-                    query_text=search_text if search_text else None,
-                    filters=filters if filters else None,
-                    limit=max_results
-                )
-                
-                if not results:
-                    return "No products found matching your criteria."
-                
-                # Format results
-                return _format_product_results(results)
-                
-            except Exception as e:
-                logger.error(f"Error during product search: {e}")
-                return f"Error searching products: {str(e)}"
+            # Build filters
+            filters = {}
+            if price_filter:
+                filters.update(price_filter)
+            if category_filter:
+                filters["category"] = {"$regex": category_filter, "$options": "i"}
+            if availability_filter:
+                filters["inventory.availability"] = availability_filter
+            
+            # Extract clean search text
+            search_text =_clean_search_text(query)
+            
+            # Search products
+            results = _DB_CLIENT.search_products(
+                query_text=search_text if search_text else None,
+                filters=filters if filters else None,
+                limit=max_results
+            )
+            
+            if not results:
+                return "No products found matching your criteria."
+            
+            # Format results
+            return _format_product_results(results)
+            
+        except Exception as e:
+            logger.error(f"Error during product search: {e}")
+            return f"Error searching products: {str(e)}"
         
-        super().__init__(
-            name=NAME,
-            description=DESCRIPTION,
-            func=product_search_tool,
-            **kwargs
-        )
-    
+
 def _extract_price_filter(query: str) -> Optional[Dict[str, Any]]:
     """Extract price filters from natural language query."""
     # Pattern for "under $X", "below $X", "less than $X"

@@ -2,11 +2,12 @@
 
 import logging
 import re
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional, Tuple, Type
 from datetime import datetime, timedelta
 from langchain_core.tools import Tool, BaseTool
 import spacy
-from pydantic import PrivateAttr
+from pydantic import BaseModel, Field
+from langchain_core.callbacks import CallbackManagerForToolRun
 
 from app.tools.database_client import DatabaseClient
 from app.tools.tool_config import (
@@ -19,65 +20,57 @@ from app.tools.tool_config import (
 
 logger = logging.getLogger(__name__)
 
-NAME: str = "appointment_management" 
-DESCRIPTION: str = "Manage appointments: search availability, book new, reschedule, cancel, and view appointments"
+# Initialize database client & SpaCy NER model
+try:
+    _DB_CLIENT = DatabaseClient()
+    try:
+        _NER = spacy.load(SPACY_MODEL_NAME)
+    except OSError:
+        logger.warning(f"Could not load SpaCy model '{SPACY_MODEL_NAME}'. Name extraction will be disabled.")
+        _NER = None
+except Exception as e:
+    logger.error(f"Failed to initilize appointment database at import: {e}")
+    _DB_CLIENT = None
+
+class AppointmentInput(BaseModel):
+    query: str = Field(..., description="The query to handle abd manage appointments from the database")
+    user_name: str = Field(..., description="The user name of the user to search in the database")
+    user_email: str = Field(..., description="The user email of the user to search in the database")
 
 class AppointmentTool(BaseTool):
     """Tool for managing appointments with full CRUD operations."""
     
     name: str = "appointment_management"
     description: str = "Manage appointments: search availability, book new, reschedule, cancel, and view appointments"
-  
-    def __init__(self, **kwargs):
-        """Initialize the appointment management tool."""
-        # Initialize database client & SpaCy NER model
-        db_client = DatabaseClient()
+    args_schema: Type[BaseModel] = AppointmentInput
+
+    def _run(query: str, user_name: str = "", user_email: str = "", run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
+        """Execute appointment management based on query."""
         try:
-            ner = spacy.load(SPACY_MODEL_NAME)
-        except OSError:
-            logger.warning(f"Could not load SpaCy model '{SPACY_MODEL_NAME}'. Name extraction will be disabled.")
-            ner = None
-    
-        def appointment_tool(query: str, user_name: str = "", user_email: str = "") -> str:
-            """
-            Execute appointment management based on query.
+            if _DB_CLIENT is None:
+                return "Appointment Database is not available right now."
+
+            # Detect the type of appointment operation
+            operation = _detect_operation(query)
             
-            Args:
-                query: Natural language query about appointments
-                user_name: User's full name (required for booking/modifying)
-                user_email: User's email (required for booking/modifying)
+            if operation == "search_availability":
+                return _handle_availability_search(query, _DB_CLIENT, _NER)
+            elif operation == "book": # create new appointment
+                return _handle_new_booking(query, user_name, user_email, _DB_CLIENT, _NER)
+            elif operation == "view": # read appointments
+                return _handle_view_appointments(query, user_email, _DB_CLIENT)
+            elif operation == "cancel": # delete appointment
+                return _handle_cancellation(query, user_email, _DB_CLIENT)
+            elif operation == "reschedule": # update existing appointment
+                return _handle_reschedule(query, user_email, _DB_CLIENT)
+            else:
+                # Default to availability search
+                return _handle_availability_search(query, _DB_CLIENT, _NER)
                 
-            Returns:
-                Formatted string with appointment results or status
-            """
-            try:
-                # Detect the type of appointment operation
-                operation = _detect_operation(query)
-                
-                if operation == "search_availability":
-                    return _handle_availability_search(query, db_client, ner)
-                elif operation == "book": # create new appointment
-                    return _handle_new_booking(query, user_name, user_email, db_client, ner)
-                elif operation == "view": # read appointments
-                    return _handle_view_appointments(query, user_email, db_client)
-                elif operation == "cancel": # delete appointment
-                    return _handle_cancellation(query, user_email, db_client)
-                elif operation == "reschedule": # update existing appointment
-                    return _handle_reschedule(query, user_email, db_client)
-                else:
-                    # Default to availability search
-                    return _handle_availability_search(query, db_client, ner)
-                    
-            except Exception as e:
-                logger.error(f"Error during appointment management: {e}")
-                return f"Error managing appointments: {str(e)}"
+        except Exception as e:
+            logger.error(f"Error during appointment management: {e}")
+            return f"Error managing appointments: {str(e)}"
         
-        super().__init__(
-            name=NAME,
-            description=DESCRIPTION,
-            func=appointment_tool,
-            **kwargs
-        )
 
 def _detect_operation(query: str) -> str:
     """Detect what type of appointment operation is requested."""

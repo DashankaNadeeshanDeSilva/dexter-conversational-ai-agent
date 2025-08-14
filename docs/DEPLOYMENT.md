@@ -1,4 +1,4 @@
-# Deployment Guide
+# Deployment Guide  **==REWRITE/UPDATE ACCORDING TO AWS LAMBDA SERVERLESS DEPLOYMENT==**
 
 **Note that this documentation is created with partial help of GenAI tools.**
 

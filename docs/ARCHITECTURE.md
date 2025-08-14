@@ -51,19 +51,20 @@ The heart of Dexter lies in its sophisticated memory systems, each designed to h
     └─────────────────┘ └─────────────┘ └─────────────────────────┘
             │                   │                       │
             ▼                   ▼                       ▼
-    ┌─────────────────┐ ┌─────────────┐ ┌─────────────────────────┐
-    │   Redis Cache   │ │  MongoDB    │ │  Semantic │ Episodic │  │
-    │  (Real-time     │ │ (Session    │ │  Memory   │ Memory   │  │
-    │   Context)      │ │  Tracking)  │ │ (Pinecone)│(MongoDB) │  │
+    ┌─────────────────┐ ┌─────────────┐ ┌──────────────────────┐
+    │   Redis Cache   │ │  MongoDB    │ │  Semantic │ Episodic │
+    │  (Real-time     │ │ (Session    │ │  Memory   │ Memory   │
+    │   Context)      │ │  Tracking)  │ │ (Pinecone)│(MongoDB) │
     └─────────────────┘ └─────────────┘ └───────────┴──────────┘
                                                      │
+                                                     ▼
                                         ┌─────────────────────────┐
                                         │   Procedural Memory     │
                                         │      (MongoDB)          │
                                         └─────────────────────────┘
 ```
 
-### 1. Session Manager
+### 1. Session Manager **=CHANGE=**
 
 **Purpose**: Manages the complete lifecycle of user interactions and maintains conversation state.
 
@@ -108,7 +109,7 @@ The heart of Dexter lies in its sophisticated memory systems, each designed to h
 - Tracking conversation state and user intent
 - Caching frequently accessed information
 
-### 3. Semantic Memory
+### 3. Long-term Memory: Semantic Memory
 
 **Purpose**: Stores factual knowledge and conceptual understanding extracted from conversations.
 
@@ -142,7 +143,7 @@ def extract_semantic_facts(conversation):
 }
 ```
 
-### 4. Episodic Memory
+### 4. Long-term Memory: Episodic Memory
 
 **Purpose**: Records specific conversation events and their temporal relationships.
 
@@ -175,7 +176,7 @@ def extract_semantic_facts(conversation):
 }
 ```
 
-### 5. Procedural Memory
+### 5. Long-term Memory: Procedural Memory
 
 **Purpose**: Learns and stores successful problem-solving strategies and tool usage patterns.
 
@@ -236,7 +237,7 @@ User Input ──▶ Intent Analysis ──▶ Reasoning Phase ──▶ Action 
 4. **Step Planning**: Break down complex tasks into manageable steps
 5. **Execution Monitoring**: Track progress and adapt as needed
 
-**Example Reasoning Process**:
+**Example Reasoning Process**:  **=CHANGE=**
 ```
 User: "Schedule a checkup with Dr. Smith next week"
 
@@ -272,7 +273,7 @@ async def execute_tool(tool_name, parameters, context):
         # Graceful degradation
 ```
 
-## Tool Ecosystem
+## Tool Ecosystem  **=UPDATE=**
 
 Each tool in Dexter's ecosystem is designed to understand natural language and handle real-world complexity.
 

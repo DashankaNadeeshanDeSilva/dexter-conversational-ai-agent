@@ -23,6 +23,7 @@ class MongoDBClient:
             
             # Initialize collections
             self.conversations: Collection = self.db[settings.MONGODB_CONVERSATION_COLLECTION]
+            self.sessions: Collection = self.db[settings.MONGODB_SESSION_COLLECTION]
             self.memory: Collection = self.db[settings.MONGODB_MEMORY_COLLECTION]
             
             # Create indexes for faster retrieval
@@ -35,14 +36,14 @@ class MongoDBClient:
     
     def _setup_indexes(self):
         """Set up indexes for conversation and memory managment."""
-        # Index for conversations by user_id for quick user history retrieval
-        self.conversations.create_index("user_id")
-        
+        # Create index for conversations by user_id for quick user history retrieval
+        self.conversations.create_index(["user_id", "created_at", "updated_at", "messages"])
+
+        # Create index for sessions by user_id for quick user history retrieval
+        self.sessions.create_index(["session_id", "user_id", "conversation_id", "created_at"])
+
         # Index for memory by user_id and memory_type for quick memory retrieval
         self.memory.create_index([("user_id", 1), ("memory_type", 1)])
-        
-        # Index on the created_at field for time-based retrieval
-        self.conversations.create_index("created_at")
         self.memory.create_index("created_at")
     
     def create_conversation(self, user_id: str) -> str:
@@ -55,8 +56,27 @@ class MongoDBClient:
         }
         result = self.conversations.insert_one(conversation)
         conversation_id = str(result.inserted_id)
-        logger.debug(f"Created conversation {conversation_id} for user {user_id}")
+        logger.info(f"Created conversation {conversation_id} for user {user_id}")
         return conversation_id
+
+    def create_session(self, user_id: str, conversation_id: str) -> str:
+        """Create a new session for a conversation."""
+        session_id = str(uuid.uuid4())
+        
+        session_data = {
+            "session_id": session_id,
+            "user_id": user_id,
+            "conversation_id": conversation_id,
+            "created_at": datetime.utcnow()
+        }
+        
+        try:
+            self.sessions.insert_one(session_data)
+            logger.info(f"Created new session {session_id} for conversation {conversation_id}")
+            return session_id
+        except Exception as e:
+            logger.error(f"Error creating session: {e}")
+            raise
     
     def add_message(self, conversation_id: str, message: Dict[str, Any]) -> bool:
         """Add a message to a conversation."""

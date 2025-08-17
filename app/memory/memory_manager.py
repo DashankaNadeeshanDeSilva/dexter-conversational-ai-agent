@@ -11,7 +11,7 @@ from langchain_core.messages import BaseMessage
 from app.memory.mongodb_client import MongoDBClient
 from app.db_clients.pinecone_client import PineconeClient
 from app.memory.short_term_memory import ShortTermMemory
-from app.memory.session_manager import SessionManager
+#from app.memory.session_manager import SessionManager
 from app.memory.semantic_extractor import SemanticExtractor
 from app.memory.episodic_memory import EpisodicMemoryManager
 from app.memory.procedural_memory import ProceduralMemoryManager
@@ -33,7 +33,6 @@ class MemoryManager:
         self.mongodb_client = MongoDBClient()
         self.pinecone_client = PineconeClient()
         self.short_term_memories = {}  # Map of session_id -> ShortTermMemory
-        self.session_manager = SessionManager(self.mongodb_client)
         self.semantic_extractor = SemanticExtractor()
         self.episodic_memory = EpisodicMemoryManager(self.mongodb_client)
         self.procedural_memory = ProceduralMemoryManager(self.mongodb_client)
@@ -242,7 +241,7 @@ class MemoryManager:
 
     def create_session (self, user_id: str, session_id: str) -> str:
         """Create a new session for a user."""
-        return self.session_manager.create_session(user_id, session_id)
+        return self.mongodb_client.create_session(user_id, session_id)
     
     def add_message_to_conversation(
         self, 

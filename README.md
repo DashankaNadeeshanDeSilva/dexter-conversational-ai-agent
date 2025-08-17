@@ -59,18 +59,28 @@ The motivation to build Dexter customer support AI agent stems from the belief t
 # Clone and setup
 git clone https://github.com/yourusername/dexter-conversational-ai-agent.git
 cd dexter-conversational-ai-agent
-cp .env.example .env
 
-# Configure your .env file with API keys
-# See docs/DEPLOYMENT.md for detailed configuration
+# Quick setup (recommended for first-time users)
+python setup_mongodb.py
+
+# Or manual setup:
+cp env.example .env
+# Edit .env file with your API keys and MongoDB connection string
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Test MongoDB connection
+python test_mongodb_connection.py
 
 # Start with Docker (recommended)
 docker-compose up -d
 
 # Or run locally
-pip install -r requirements.txt
 python -m uvicorn app.main:app --reload --port 8000
 ```
+
+**⚠️ Important**: If you encounter MongoDB connection issues, see [MongoDB Troubleshooting Guide](docs/MONGODB_TROUBLESHOOTING.md)
 
 ### Try It Out
 ```bash

@@ -106,3 +106,22 @@ If you need further assistance or wish to schedule a service, feel free to conta
 - **Website:** [www.stellartech.de](http://www.stellartech.de)
 
 If you have any more questions or need assistance, feel free to ask!
+=============================================
+
+Built end-to-end conversational AI chatbot applications from design to product.
+Implmented target speaker extraction and speech separtion models for multi-speaker scenarios 
+Applied ASR (STT & TTS) models in real-time trascription and translation application.
+Fine-tuned LLMs using PEFT (LoRA) and involved with multi-modal language models
+
+
+Built end-to-end conversational AI applications to improve customer support and employee assistance.
+Led the project design to product, scaled from PoC to 
+developed and deployed LLM workflows, Retrieval pipelines and AI Agents featuring planning and memory.
+Worked in fine-tuning LLMs using PEFT (LoRA) methods on domain-specific datasets for downstream tasks.
+Involved in research initiatives in developing target speech extraction and separation models.
+
+Built end-to-end conversational AI applications to improve customer support and employee assistance. Chat and voice bots/assistant (reception bot) and multi-modal LM
+Led the project concept to product (AI lifecycle)
+developed and deployed LLM workflows, Retrieval pipelines and AI Agents featuring planning and memory.
+Worked in fine-tuning LLMs using PEFT (LoRA) methods on domain-specific datasets for downstream tasks.
+Involved in research initiatives in developing target speech extraction and separation models. to 

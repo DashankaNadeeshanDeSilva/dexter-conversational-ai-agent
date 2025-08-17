@@ -8,11 +8,11 @@ def main():
     """Run the application."""
     # Set up logging
     logger = setup_logging(
-        app_name="ai_agent",
+        app_name="dexter_ai_agent",
         log_level="DEBUG" if settings.DEBUG else "INFO"
     )
     
-    logger.info("Starting AI Agent with Memory")
+    logger.info("Starting Dexter AI Agent")
     logger.info(f"Debug mode: {settings.DEBUG}")
     logger.info(f"Metrics enabled: {settings.ENABLE_METRICS}")
     

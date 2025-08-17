@@ -105,11 +105,8 @@ class ReActAgent:
         def think(state: AgentState) -> AgentState:
             """Generate agent thoughts/response."""
             # Prepare tool descriptions and system prompt
-            tool_descriptions = "\n".join([
-                f"- {tool.name}: {tool.description}" for tool in state.tools or []
-            ]) 
+            tool_descriptions = "\n".join([f"- {tool.name}: {tool.description}" for tool in state.tools or []]) 
             system_prompt = create_system_prompt(tool_descriptions=tool_descriptions)
-
             # Create prompt with messages
             messages = [SystemMessage(content=system_prompt)] + state.messages
             
@@ -117,23 +114,21 @@ class ReActAgent:
             if state.messages and isinstance(state.messages[-1], HumanMessage):
                 query = state.messages[-1].content
 
-                # Get memories relevant to the last human message
+                # Check and retrieve relevant memories from semantic, episodic, and procedural memories relevant to the last human message
                 agent_memory_utils = AgentMemoryUtils(self.memory_manager)
-
-                # Check and retrieve relevant memories from semantic, episodic, and procedural memories
                 memory_context = agent_memory_utils.retrieve_memory_context(state.user_id, query)
 
                 # Insert combined memories into context (just after system message/prompt)
                 if memory_context != "No relevant information found in memory.":
                     messages.insert(1, SystemMessage(content=memory_context))
 
-            # Bind tools to the LLM
+            # Bind tools to the LLM 
             llm_with_tools = self.llm.bind_tools(
                 tools=state.tools,
                 tool_choice="auto"
             )
 
-            # Get response from LLM
+            # Invoke the LLM and get response
             response = llm_with_tools.invoke(messages)
 
             # Update the state
@@ -170,7 +165,7 @@ class ReActAgent:
                     logger.error(f"Unexpected tool result format: {type(tool_result_dict)}")
                     return state
 
-                # Get and store tool activities in procedural memory #
+                # Get and store tool activities in procedural memory # CHANGE:INCLUDE THIS IN memory_utils.py
                 tool_result_messages = [
                     msg for msg in state.messages[last_messages_count:]
                     if isinstance(msg, ToolMessage)
@@ -185,10 +180,10 @@ class ReActAgent:
                     tool_result_content = tool_result_message.content
 
                     # Store tool acttvity in session
-                    self.memory_manager.session_manager.update_session_activity(
+                    '''self.memory_manager.session_manager.update_session_activity(
                         state.session_id,
                         f"used_tool_{tool_name}"
-                    )
+                    )'''
                     
                     # Store procedural memory about tool usage
                     self.memory_manager.store_procedural_memory(
@@ -328,7 +323,7 @@ class ReActAgent:
             Agent response
         """
         # Update session activity for user message
-        self.memory_manager.session_manager.update_session_activity(session_id, "message")
+        #self.memory_manager.session_manager.update_session_activity(session_id, "message")
         
         # Get short-term memory or initialize it
         short_term_memory = self.memory_manager.get_short_term_memory(session_id)

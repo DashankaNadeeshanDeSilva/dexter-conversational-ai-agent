@@ -1,3 +1,4 @@
+#### Deprecated - this file is not used in the current implementation ####
 """Session management for tracking conversation sessions."""
 ### Inactive - this file is not used in the current implementation
 from typing import Dict, List, Any, Optional

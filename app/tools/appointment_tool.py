@@ -53,7 +53,8 @@ class AppointmentTool(BaseTool):
         "Manage appointments: book new appointments, cancel existing ones, reschedule, view user appointments, "
         "and search for available slots. Required fields: book (user_email, user_name, date, time, service_type), "
         "cancel (user_email, appointment_id), reschedule (user_email, appointment_id, date, time), "
-        "view (user_email, optional: status_filter), search_availability (user_email, optional: date, service_type, provider). Always provide user_email."
+        "view (user_email, optional: status_filter), search_availability (user_email, optional: date, service_type, provider). "
+        "Always provide user_email."
     )
     args_schema: Type[BaseModel] = AppointmentInput
 
@@ -105,7 +106,7 @@ class AppointmentTool(BaseTool):
         operation: str, 
         user_email: str, 
         user_name: str, 
-        date: str,
+        date: str, 
         time: str, 
         service_type: str, 
         appointment_id: str
@@ -204,8 +205,7 @@ class AppointmentTool(BaseTool):
                 date=date,
                 time=time,
                 service_type=service_type,
-                provider=provider,
-                notes=""  # Empty string since notes was removed
+                provider=provider
             )
             
             if appointment_id:

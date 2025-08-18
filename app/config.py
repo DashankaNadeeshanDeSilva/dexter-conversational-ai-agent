@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     LANGCHAIN_TRACING: bool = os.getenv("LANGCHAIN_TRACING", "false").lower() == "true"
     LANGCHAIN_PROJECT: str = os.getenv("LANGCHAIN_PROJECT", "ai-agent-with-memory")
     LANGCHAIN_API_KEY: str = os.getenv("LANGCHAIN_API_KEY", "")
+
+    # System Prompt Path
+    SYSTEM_PROMPT_PATH: str = os.getenv("SYSTEM_PROMPT_PATH", "app/agent/system_prompts/system_prompt.md")
     
     # Monitoring
     ENABLE_METRICS: bool = os.getenv("ENABLE_METRICS", "true").lower() == "true"

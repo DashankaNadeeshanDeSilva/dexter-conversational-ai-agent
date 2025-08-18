@@ -52,7 +52,7 @@ class AgentAction(str, Enum):
 
 def create_system_prompt(tool_descriptions: str) -> str:
     """Create the system prompt for the agent."""
-    with open("system_prompt.md", "r") as file:
+    with open(settings.SYSTEM_PROMPT_PATH, "r") as file:
         system_prompt = file.read()
     return system_prompt.format(tool_descriptions=tool_descriptions)
 

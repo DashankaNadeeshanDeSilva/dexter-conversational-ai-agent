@@ -1,376 +1,366 @@
-"""Tests for memory manager."""
+"""Tests for the Memory Manager."""
 
 import pytest
 from unittest.mock import MagicMock, patch, call
 from datetime import datetime
-from typing import List, Tuple
+from typing import Dict, Any, List
 
 from app.memory.memory_manager import MemoryManager, MemoryType
-from langchain_core.documents import Document
+from app.memory.mongodb_client import MongoDBClient
+from app.db_clients.pinecone_client import PineconeClient
+from app.memory.short_term_memory import ShortTermMemory
+from app.memory.episodic_memory import EpisodicMemoryManager
+from app.memory.procedural_memory import ProceduralMemoryManager
+from app.memory.semantic_extractor import SemanticExtractor
+from langchain_core.messages import HumanMessage, AIMessage, BaseMessage
 
 
 class TestMemoryManager:
-    """Tests for the memory manager."""
+    """Test the MemoryManager class."""
     
-    @patch('app.memory.memory_manager.SemanticExtractor')
-    @patch('app.memory.memory_manager.EpisodicMemoryManager')
-    @patch('app.memory.memory_manager.ProceduralMemoryManager')
-    @patch('app.memory.memory_manager.SessionManager')
-    @patch('app.memory.memory_manager.MongoDBClient')
-    @patch('app.memory.memory_manager.PineconeClient')
-    def test_init(self, mock_pinecone_cls, mock_mongodb_cls, mock_session_cls, 
-                  mock_procedural_cls, mock_episodic_cls, mock_semantic_cls):
-        """Test initialization of memory manager."""
-        # Arrange
-        mock_mongodb = MagicMock()
-        mock_pinecone = MagicMock()
-        mock_mongodb_cls.return_value = mock_mongodb
-        mock_pinecone_cls.return_value = mock_pinecone
+    @pytest.fixture
+    def mock_mongodb_client(self):
+        """Create a mock MongoDB client."""
+        mock = MagicMock(spec=MongoDBClient)
+        mock.store_memory = MagicMock(return_value="test_memory_id")
+        mock.get_memories = MagicMock(return_value=[])
+        mock.create_conversation = MagicMock(return_value="test_conversation_id")
+        mock.get_conversation = MagicMock(return_value={
+            "_id": "test_conversation_id",
+            "user_id": "test_user",
+            "messages": [],
+            "created_at": datetime.utcnow()
+        })
+        mock.add_message_to_conversation = MagicMock()
+        mock.get_user_conversations = MagicMock(return_value=[])
+        return mock
+    
+    @pytest.fixture
+    def mock_pinecone_client(self):
+        """Create a mock Pinecone client."""
+        mock = MagicMock(spec=PineconeClient)
+        mock.store_memory = MagicMock(return_value="test_vector_id")
+        mock.search_similar = MagicMock(return_value=[])
+        mock.store_knowledge = MagicMock(return_value="test_knowledge_id")
+        mock.search_knowledge = MagicMock(return_value=[])
+        return mock
+    
+    @pytest.fixture
+    def mock_short_term_memory(self):
+        """Create a mock short-term memory."""
+        mock = MagicMock(spec=ShortTermMemory)
+        mock.add_message = MagicMock()
+        mock.get_messages = MagicMock(return_value=[])
+        mock.clear = MagicMock()
+        mock.session_id = "test_session_id"
+        return mock
+    
+    @pytest.fixture
+    def mock_episodic_memory(self):
+        """Create a mock episodic memory manager."""
+        mock = MagicMock(spec=EpisodicMemoryManager)
+        mock.store_memory = MagicMock(return_value="test_episodic_id")
+        mock.retrieve_memories = MagicMock(return_value=[])
+        mock.search_memories = MagicMock(return_value=[])
+        return mock
+    
+    @pytest.fixture
+    def mock_procedural_memory(self):
+        """Create a mock procedural memory manager."""
+        mock = MagicMock(spec=ProceduralMemoryManager)
+        mock.store_memory = MagicMock(return_value="test_procedural_id")
+        mock.retrieve_memories = MagicMock(return_value=[])
+        mock.search_memories = MagicMock(return_value=[])
+        return mock
+    
+    @pytest.fixture
+    def mock_semantic_extractor(self):
+        """Create a mock semantic extractor."""
+        mock = MagicMock(spec=SemanticExtractor)
+        mock.extract_entities = MagicMock(return_value=["entity1", "entity2"])
+        mock.extract_keywords = MagicMock(return_value=["keyword1", "keyword2"])
+        mock.extract_summary = MagicMock(return_value="Test summary")
+        return mock
+    
+    @pytest.fixture
+    def memory_manager(self, mock_mongodb_client, mock_pinecone_client, 
+                      mock_short_term_memory, mock_episodic_memory, 
+                      mock_procedural_memory, mock_semantic_extractor):
+        """Create a MemoryManager instance with mocked dependencies."""
+        with patch('app.memory.memory_manager.MongoDBClient', return_value=mock_mongodb_client), \
+             patch('app.memory.memory_manager.PineconeClient', return_value=mock_pinecone_client), \
+             patch('app.memory.memory_manager.ShortTermMemory', return_value=mock_short_term_memory), \
+             patch('app.memory.memory_manager.EpisodicMemoryManager', return_value=mock_episodic_memory), \
+             patch('app.memory.memory_manager.ProceduralMemoryManager', return_value=mock_procedural_memory), \
+             patch('app.memory.memory_manager.SemanticExtractor', return_value=mock_semantic_extractor):
+            
+            manager = MemoryManager()
+            return manager
+    
+    def test_initialization(self, memory_manager, mock_mongodb_client, mock_pinecone_client,
+                           mock_short_term_memory, mock_episodic_memory, mock_procedural_memory,
+                           mock_semantic_extractor):
+        """Test MemoryManager initialization."""
+        assert memory_manager.mongodb_client == mock_mongodb_client
+        assert memory_manager.pinecone_client == mock_pinecone_client
+        assert memory_manager.short_term_memories == {}
+        assert memory_manager.semantic_extractor == mock_semantic_extractor
+        assert memory_manager.episodic_memory == mock_episodic_memory
+        assert memory_manager.procedural_memory == mock_procedural_memory
+    
+    def test_get_short_term_memory_new_session(self, memory_manager, mock_short_term_memory):
+        """Test getting short-term memory for a new session."""
+        session_id = "new_session"
         
-        # Act
-        manager = MemoryManager()
+        result = memory_manager.get_short_term_memory(session_id)
         
-        # Assert
-        assert manager.mongodb_client == mock_mongodb
-        assert manager.pinecone_client == mock_pinecone
-        assert manager.short_term_memories == {}
-        mock_session_cls.assert_called_once_with(mock_mongodb)
-        mock_semantic_cls.assert_called_once()
-        mock_episodic_cls.assert_called_once_with(mock_mongodb)
-        mock_procedural_cls.assert_called_once_with(mock_mongodb)
-
-    @patch('app.memory.memory_manager.SemanticExtractor')
-    @patch('app.memory.memory_manager.EpisodicMemoryManager')
-    @patch('app.memory.memory_manager.ProceduralMemoryManager')
-    @patch('app.memory.memory_manager.SessionManager')
-    @patch('app.memory.memory_manager.ShortTermMemory')
-    @patch('app.memory.memory_manager.MongoDBClient')
-    @patch('app.memory.memory_manager.PineconeClient')
-    def test_get_short_term_memory_new_session(self, mock_pinecone_cls, mock_mongodb_cls, 
-                                               mock_short_term_cls, mock_session_cls,
-                                               mock_procedural_cls, mock_episodic_cls, 
-                                               mock_semantic_cls):
-        """Test getting short-term memory for new session."""
-        # Arrange
-        mock_short_term = MagicMock()
-        mock_short_term_cls.return_value = mock_short_term
+        assert result == mock_short_term_memory
+        assert session_id in memory_manager.short_term_memories
+        assert memory_manager.short_term_memories[session_id] == mock_short_term_memory
+    
+    def test_get_short_term_memory_existing_session(self, memory_manager, mock_short_term_memory):
+        """Test getting short-term memory for an existing session."""
+        session_id = "existing_session"
+        memory_manager.short_term_memories[session_id] = mock_short_term_memory
         
-        manager = MemoryManager()
+        result = memory_manager.get_short_term_memory(session_id)
         
-        # Act
-        result = manager.get_short_term_memory("new_session")
+        assert result == mock_short_term_memory
+        # Should not create a new instance
+        assert len(memory_manager.short_term_memories) == 1
+    
+    def test_add_message_to_short_term_memory(self, memory_manager, mock_short_term_memory):
+        """Test adding a message to short-term memory."""
+        session_id = "test_session"
+        message = HumanMessage(content="Hello")
         
-        # Assert
-        assert result == mock_short_term
-        assert manager.short_term_memories["new_session"] == mock_short_term
-        mock_short_term_cls.assert_called_once_with("new_session")
-
-    @patch('app.memory.memory_manager.SemanticExtractor')
-    @patch('app.memory.memory_manager.EpisodicMemoryManager')
-    @patch('app.memory.memory_manager.ProceduralMemoryManager')
-    @patch('app.memory.memory_manager.SessionManager')
-    @patch('app.memory.memory_manager.ShortTermMemory')
-    @patch('app.memory.memory_manager.MongoDBClient')
-    @patch('app.memory.memory_manager.PineconeClient')
-    def test_get_short_term_memory_existing_session(self, mock_pinecone_cls, mock_mongodb_cls, 
-                                                   mock_short_term_cls, mock_session_cls,
-                                                   mock_procedural_cls, mock_episodic_cls, 
-                                                   mock_semantic_cls):
-        """Test getting short-term memory for existing session."""
-        # Arrange
-        mock_short_term = MagicMock()
-        manager = MemoryManager()
-        manager.short_term_memories["existing_session"] = mock_short_term
+        memory_manager.add_message_to_short_term_memory(session_id, message)
         
-        # Act
-        result = manager.get_short_term_memory("existing_session")
+        mock_short_term_memory.add_message.assert_called_once_with(message)
+    
+    def test_get_short_term_memory_messages(self, memory_manager, mock_short_term_memory):
+        """Test getting messages from short-term memory."""
+        session_id = "test_session"
+        expected_messages = [HumanMessage(content="Hello"), AIMessage(content="Hi")]
+        mock_short_term_memory.get_messages.return_value = expected_messages
         
-        # Assert
-        assert result == mock_short_term
-        mock_short_term_cls.assert_not_called()  # Should not create new instance
-
-    @patch('app.memory.memory_manager.SemanticExtractor')
-    @patch('app.memory.memory_manager.EpisodicMemoryManager')
-    @patch('app.memory.memory_manager.ProceduralMemoryManager')
-    @patch('app.memory.memory_manager.SessionManager')
-    @patch('app.memory.memory_manager.MongoDBClient')
-    @patch('app.memory.memory_manager.PineconeClient')
-    def test_clear_short_term_memory(self, mock_pinecone_cls, mock_mongodb_cls, mock_session_cls,
-                                    mock_procedural_cls, mock_episodic_cls, mock_semantic_cls):
+        result = memory_manager.get_short_term_memory_messages(session_id)
+        
+        assert result == expected_messages
+        mock_short_term_memory.get_messages.assert_called_once()
+    
+    def test_clear_short_term_memory(self, memory_manager, mock_short_term_memory):
         """Test clearing short-term memory."""
-        # Arrange
-        mock_short_term = MagicMock()
-        manager = MemoryManager()
-        manager.short_term_memories["test_session"] = mock_short_term
+        session_id = "test_session"
+        memory_manager.short_term_memories[session_id] = mock_short_term_memory
         
-        # Act
-        manager.clear_short_term_memory("test_session")
+        memory_manager.clear_short_term_memory(session_id)
         
-        # Assert
-        mock_short_term.clear.assert_called_once()
-
-    @patch('app.memory.memory_manager.SemanticExtractor')
-    @patch('app.memory.memory_manager.EpisodicMemoryManager')
-    @patch('app.memory.memory_manager.ProceduralMemoryManager')
-    @patch('app.memory.memory_manager.SessionManager')
-    @patch('app.memory.memory_manager.MongoDBClient')
-    @patch('app.memory.memory_manager.PineconeClient')
-    def test_create_conversation(self, mock_pinecone_cls, mock_mongodb_cls, mock_session_cls,
-                                mock_procedural_cls, mock_episodic_cls, mock_semantic_cls):
-        """Test creating a conversation."""
-        # Arrange
-        mock_mongodb = MagicMock()
-        mock_mongodb.create_conversation.return_value = "test_conversation_id"
-        mock_mongodb_cls.return_value = mock_mongodb
+        mock_short_term_memory.clear.assert_called_once()
+    
+    def test_clear_short_term_memory_nonexistent_session(self, memory_manager):
+        """Test clearing short-term memory for non-existent session."""
+        session_id = "nonexistent_session"
         
-        manager = MemoryManager()
-        
-        # Act
-        result = manager.create_conversation("test_user")
-        
-        # Assert
-        assert result == "test_conversation_id"
-        mock_mongodb.create_conversation.assert_called_once_with("test_user")
-
-    @patch('app.memory.memory_manager.SemanticExtractor')
-    @patch('app.memory.memory_manager.EpisodicMemoryManager')
-    @patch('app.memory.memory_manager.ProceduralMemoryManager')
-    @patch('app.memory.memory_manager.SessionManager')
-    @patch('app.memory.memory_manager.MongoDBClient')
-    @patch('app.memory.memory_manager.PineconeClient')
-    def test_store_episodic_memory(self, mock_pinecone_cls, mock_mongodb_cls, mock_session_cls,
-                                  mock_procedural_cls, mock_episodic_cls, mock_semantic_cls):
+        # Should not raise an error
+        memory_manager.clear_short_term_memory(session_id)
+    
+    def test_store_episodic_memory(self, memory_manager, mock_episodic_memory):
         """Test storing episodic memory."""
-        # Arrange
-        mock_episodic = MagicMock()
-        mock_episodic.store_memory.return_value = "test_episodic_id"
-        mock_episodic_cls.return_value = mock_episodic
+        user_id = "test_user"
+        content = {"event": "user_greeting", "message": "Hello"}
+        metadata = {"conversation_id": "test_conv", "timestamp": datetime.utcnow()}
         
-        manager = MemoryManager()
+        result = memory_manager.store_episodic_memory(user_id, content, metadata)
         
-        # Act
-        result = manager.store_episodic_memory(
-            user_id="test_user",
-            content={"event": "test_event"},
-            metadata={"source": "test"}
-        )
-        
-        # Assert
         assert result == "test_episodic_id"
-        mock_episodic.store_memory.assert_called_once_with(
-            user_id="test_user",
-            content={"event": "test_event"},
-            metadata={"source": "test"}
-        )
-
-    @patch('app.memory.memory_manager.SemanticExtractor')
-    @patch('app.memory.memory_manager.EpisodicMemoryManager')
-    @patch('app.memory.memory_manager.ProceduralMemoryManager')
-    @patch('app.memory.memory_manager.SessionManager')
-    @patch('app.memory.memory_manager.MongoDBClient')
-    @patch('app.memory.memory_manager.PineconeClient')
-    def test_store_semantic_memory(self, mock_pinecone_cls, mock_mongodb_cls, mock_session_cls,
-                                  mock_procedural_cls, mock_episodic_cls, mock_semantic_cls):
-        """Test storing semantic memory."""
-        # Arrange
-        mock_pinecone = MagicMock()
-        mock_pinecone.store_memory.return_value = "test_semantic_id"
-        mock_pinecone_cls.return_value = mock_pinecone
-        
-        manager = MemoryManager()
-        
-        # Act
-        result = manager.store_semantic_memory(
-            user_id="test_user",
-            text="User likes coffee",
-            metadata={"category": "preferences"}
-        )
-        
-        # Assert
-        assert result == "test_semantic_id"
-        mock_pinecone.store_memory.assert_called_once_with(
-            user_id="test_user",
-            text="User likes coffee",
-            metadata={"category": "preferences"}
-        )
-
-    @patch('app.memory.memory_manager.SemanticExtractor')
-    @patch('app.memory.memory_manager.EpisodicMemoryManager')
-    @patch('app.memory.memory_manager.ProceduralMemoryManager')
-    @patch('app.memory.memory_manager.SessionManager')
-    @patch('app.memory.memory_manager.MongoDBClient')
-    @patch('app.memory.memory_manager.PineconeClient')
-    def test_store_procedural_memory(self, mock_pinecone_cls, mock_mongodb_cls, mock_session_cls,
-                                    mock_procedural_cls, mock_episodic_cls, mock_semantic_cls):
+        mock_episodic_memory.store_memory.assert_called_once_with(user_id, content, metadata)
+    
+    def test_store_procedural_memory(self, memory_manager, mock_procedural_memory):
         """Test storing procedural memory."""
-        # Arrange
-        mock_procedural = MagicMock()
-        mock_procedural.store_memory.return_value = "test_procedural_id"
-        mock_procedural_cls.return_value = mock_procedural
+        user_id = "test_user"
+        content = {"tool": "web_search", "success": True}
+        metadata = {"conversation_id": "test_conv", "timestamp": datetime.utcnow()}
         
-        manager = MemoryManager()
+        result = memory_manager.store_procedural_memory(user_id, content, metadata)
         
-        # Act
-        result = manager.store_procedural_memory(
-            user_id="test_user",
-            content={"tool": "search", "success": True},
-            metadata={"pattern": "search_pattern"}
-        )
-        
-        # Assert
         assert result == "test_procedural_id"
-        mock_procedural.store_memory.assert_called_once_with(
-            user_id="test_user",
-            content={"tool": "search", "success": True},
-            metadata={"pattern": "search_pattern"}
-        )
-
-    @patch('app.memory.memory_manager.SemanticExtractor')
-    @patch('app.memory.memory_manager.EpisodicMemoryManager')
-    @patch('app.memory.memory_manager.ProceduralMemoryManager')
-    @patch('app.memory.memory_manager.SessionManager')
-    @patch('app.memory.memory_manager.MongoDBClient')
-    @patch('app.memory.memory_manager.PineconeClient')
-    def test_retrieve_semantic_memories(self, mock_pinecone_cls, mock_mongodb_cls, mock_session_cls,
-                                       mock_procedural_cls, mock_episodic_cls, mock_semantic_cls):
-        """Test retrieving semantic memories."""
-        # Arrange
-        mock_pinecone = MagicMock()
-        expected_results = [
-            (Document(page_content="User likes coffee", metadata={"score": 0.95}), 0.95)
+        mock_procedural_memory.store_memory.assert_called_once_with(user_id, content, metadata)
+    
+    def test_create_conversation(self, memory_manager, mock_mongodb_client):
+        """Test creating a conversation."""
+        user_id = "test_user"
+        
+        result = memory_manager.create_conversation(user_id)
+        
+        assert result == "test_conversation_id"
+        mock_mongodb_client.create_conversation.assert_called_once_with(user_id)
+    
+    def test_create_session(self, memory_manager, mock_mongodb_client):
+        """Test creating a session."""
+        user_id = "test_user"
+        conversation_id = "test_conv"
+        
+        result = memory_manager.create_session(user_id, conversation_id)
+        
+        assert result == "test_session_id"
+        mock_mongodb_client.create_session.assert_called_once_with(user_id, conversation_id)
+    
+    def test_get_conversation(self, memory_manager, mock_mongodb_client):
+        """Test getting a conversation."""
+        conversation_id = "test_conv"
+        expected_conversation = {
+            "_id": "test_conversation_id",
+            "user_id": "test_user",
+            "messages": []
+        }
+        mock_mongodb_client.get_conversation.return_value = expected_conversation
+        
+        result = memory_manager.get_conversation(conversation_id)
+        
+        assert result == expected_conversation
+        mock_mongodb_client.get_conversation.assert_called_once_with(conversation_id)
+    
+    def test_add_message_to_conversation(self, memory_manager, mock_mongodb_client):
+        """Test adding a message to a conversation."""
+        conversation_id = "test_conv"
+        message = HumanMessage(content="Hello")
+        
+        memory_manager.add_message_to_conversation(conversation_id, message)
+        
+        mock_mongodb_client.add_message_to_conversation.assert_called_once_with(conversation_id, message)
+    
+    def test_get_user_conversations(self, memory_manager, mock_mongodb_client):
+        """Test getting user conversations."""
+        user_id = "test_user"
+        expected_conversations = [
+            {"_id": "conv1", "user_id": user_id},
+            {"_id": "conv2", "user_id": user_id}
         ]
-        mock_pinecone.search_similar.return_value = expected_results
-        mock_pinecone_cls.return_value = mock_pinecone
+        mock_mongodb_client.get_user_conversations.return_value = expected_conversations
         
-        manager = MemoryManager()
+        result = memory_manager.get_user_conversations(user_id)
         
-        # Act
-        result = manager.retrieve_semantic_memories(
-            user_id="test_user",
-            query="coffee preferences",
-            k=3
-        )
-        
-        # Assert
-        assert result == expected_results
-        mock_pinecone.search_similar.assert_called_once_with(
-            user_id="test_user",
-            query="coffee preferences",
-            k=3
-        )
-
-    @patch('app.memory.memory_manager.SemanticExtractor')
-    @patch('app.memory.memory_manager.EpisodicMemoryManager')
-    @patch('app.memory.memory_manager.ProceduralMemoryManager')
-    @patch('app.memory.memory_manager.SessionManager')
-    @patch('app.memory.memory_manager.MongoDBClient')
-    @patch('app.memory.memory_manager.PineconeClient')
-    def test_retrieve_episodic_memories(self, mock_pinecone_cls, mock_mongodb_cls, mock_session_cls,
-                                       mock_procedural_cls, mock_episodic_cls, mock_semantic_cls):
+        assert result == expected_conversations
+        mock_mongodb_client.get_user_conversations.assert_called_once_with(user_id)
+    
+    def test_retrieve_episodic_memories(self, memory_manager, mock_episodic_memory):
         """Test retrieving episodic memories."""
-        # Arrange
-        mock_episodic = MagicMock()
-        expected_results = [
-            {
-                "_id": "episodic_1",
-                "user_id": "test_user",
-                "content": {"event": "greeting"},
-                "metadata": {"timestamp": datetime.utcnow()}
-            }
-        ]
-        mock_episodic.get_memories.return_value = expected_results
-        mock_episodic_cls.return_value = mock_episodic
+        user_id = "test_user"
+        query = "What did we discuss?"
+        expected_memories = [{"memory": "episodic_memory_1"}, {"memory": "episodic_memory_2"}]
+        mock_episodic_memory.search_memories.return_value = expected_memories
         
-        manager = MemoryManager()
+        result = memory_manager.retrieve_episodic_memories(user_id, query)
         
-        # Act
-        result = manager.retrieve_episodic_memories(
-            user_id="test_user",
-            filter_query={"content.event": "greeting"},
-            limit=5
-        )
+        assert result == expected_memories
+        mock_episodic_memory.search_memories.assert_called_once_with(user_id, query)
+    
+    def test_retrieve_procedural_memories(self, memory_manager, mock_procedural_memory):
+        """Test retrieving procedural memories."""
+        user_id = "test_user"
+        query = "How did we solve this?"
+        expected_memories = [{"memory": "procedural_memory_1"}]
+        mock_procedural_memory.search_memories.return_value = expected_memories
         
-        # Assert
+        result = memory_manager.retrieve_procedural_memories(user_id, query)
+        
+        assert result == expected_memories
+        mock_procedural_memory.search_memories.assert_called_once_with(user_id, query)
+    
+    def test_search_semantic_memories(self, memory_manager, mock_pinecone_client):
+        """Test searching semantic memories."""
+        user_id = "test_user"
+        query = "AI and machine learning"
+        expected_memories = [{"memory": "semantic_memory_1"}]
+        mock_pinecone_client.search_similar.return_value = expected_memories
+        
+        result = memory_manager.search_semantic_memories(user_id, query)
+        
+        assert result == expected_memories
+        mock_pinecone_client.search_similar.assert_called_once_with(user_id, query)
+    
+    def test_store_knowledge(self, memory_manager, mock_pinecone_client):
+        """Test storing knowledge."""
+        knowledge_text = "AI is a branch of computer science"
+        metadata = {"source": "textbook", "category": "AI"}
+        
+        result = memory_manager.store_knowledge(knowledge_text, metadata)
+        
+        assert result == "test_knowledge_id"
+        mock_pinecone_client.store_knowledge.assert_called_once_with(knowledge_text, metadata)
+    
+    def test_search_knowledge(self, memory_manager, mock_pinecone_client):
+        """Test searching knowledge."""
+        query = "What is artificial intelligence?"
+        expected_results = [{"knowledge": "AI definition"}]
+        mock_pinecone_client.search_knowledge.return_value = expected_results
+        
+        result = memory_manager.search_knowledge(query)
+        
         assert result == expected_results
-        mock_episodic.get_memories.assert_called_once_with(
-            user_id="test_user",
-            filter_query={"content.event": "greeting"},
-            limit=5
-        )
+        mock_pinecone_client.search_knowledge.assert_called_once_with(query)
 
-    @patch('app.memory.memory_manager.SemanticExtractor')
-    @patch('app.memory.memory_manager.EpisodicMemoryManager')
-    @patch('app.memory.memory_manager.ProceduralMemoryManager')
-    @patch('app.memory.memory_manager.SessionManager')
-    @patch('app.memory.memory_manager.MongoDBClient')
-    @patch('app.memory.memory_manager.PineconeClient')
-    def test_extract_semantic_facts(self, mock_pinecone_cls, mock_mongodb_cls, mock_session_cls,
-                                   mock_procedural_cls, mock_episodic_cls, mock_semantic_cls):
-        """Test extracting semantic facts."""
-        # Arrange
-        mock_semantic_extractor = MagicMock()
-        expected_facts = [
-            {"fact": "User prefers morning meetings", "confidence": 0.9}
-        ]
-        mock_semantic_extractor.extract_facts.return_value = expected_facts
-        mock_semantic_cls.return_value = mock_semantic_extractor
-        
-        manager = MemoryManager()
-        
-        # Act
-        result = manager.extract_semantic_facts(
-            user_message="I prefer meetings in the morning",
-            agent_response="I'll schedule morning meetings for you",
-            conversation_context=[],
-            user_id="test_user"
-        )
-        
-        # Assert
-        assert result == expected_facts
-        mock_semantic_extractor.extract_facts.assert_called_once()
 
-    @patch('app.memory.memory_manager.SemanticExtractor')
-    @patch('app.memory.memory_manager.EpisodicMemoryManager')
-    @patch('app.memory.memory_manager.ProceduralMemoryManager')
-    @patch('app.memory.memory_manager.SessionManager')
-    @patch('app.memory.memory_manager.MongoDBClient')
-    @patch('app.memory.memory_manager.PineconeClient')
-    def test_store_extracted_semantic_facts(self, mock_pinecone_cls, mock_mongodb_cls, mock_session_cls,
-                                           mock_procedural_cls, mock_episodic_cls, mock_semantic_cls):
-        """Test storing extracted semantic facts."""
-        # Arrange
-        mock_pinecone = MagicMock()
-        mock_pinecone_cls.return_value = mock_pinecone
-        
-        manager = MemoryManager()
-        facts = [
-            {"fact": "User likes Python", "confidence": 0.95},
-            {"fact": "User works remotely", "confidence": 0.8}
-        ]
-        
-        # Act
-        manager.store_extracted_semantic_facts(
-            user_id="test_user",
-            facts=facts,
-            conversation_metadata={"conversation_id": "test_conv"}
-        )
-        
-        # Assert
-        assert mock_pinecone.store_memory.call_count == 2
-        calls = mock_pinecone.store_memory.call_args_list
-        
-        # Check first fact
-        assert calls[0][1]["user_id"] == "test_user"
-        assert "User likes Python" in calls[0][1]["text"]
-        
-        # Check second fact
-        assert calls[1][1]["user_id"] == "test_user"
-        assert "User works remotely" in calls[1][1]["text"]
-
-    def test_memory_type_enum(self):
+class TestMemoryType:
+    """Test the MemoryType enum."""
+    
+    def test_memory_type_values(self):
         """Test MemoryType enum values."""
-        # Assert
         assert MemoryType.EPISODIC == "episodic"
         assert MemoryType.SEMANTIC == "semantic"
         assert MemoryType.PROCEDURAL == "procedural"
         assert MemoryType.SHORT_TERM == "short_term"
+
+
+class TestMemoryManagerIntegration:
+    """Integration tests for MemoryManager."""
+    
+    @pytest.mark.asyncio
+    async def test_memory_workflow(self, memory_manager, mock_episodic_memory, 
+                                  mock_procedural_memory, mock_pinecone_client):
+        """Test complete memory workflow."""
+        user_id = "test_user"
+        conversation_id = "test_conv"
+        session_id = "test_session"
+        
+        # Create conversation and session
+        conv_id = memory_manager.create_conversation(user_id)
+        sess_id = memory_manager.create_session(user_id, conversation_id)
+        
+        assert conv_id == "test_conversation_id"
+        assert sess_id == "test_session_id"
+        
+        # Store different types of memory
+        episodic_id = memory_manager.store_episodic_memory(
+            user_id, 
+            {"event": "user_query", "message": "What is AI?"},
+            {"conversation_id": conversation_id}
+        )
+        
+        procedural_id = memory_manager.store_procedural_memory(
+            user_id,
+            {"tool": "web_search", "success": True},
+            {"conversation_id": conversation_id}
+        )
+        
+        knowledge_id = memory_manager.store_knowledge(
+            "AI is artificial intelligence",
+            {"source": "conversation", "category": "definition"}
+        )
+        
+        assert episodic_id == "test_episodic_id"
+        assert procedural_id == "test_procedural_id"
+        assert knowledge_id == "test_knowledge_id"
+        
+        # Retrieve memories
+        episodic_memories = memory_manager.retrieve_episodic_memories(user_id, "AI")
+        procedural_memories = memory_manager.retrieve_procedural_memories(user_id, "web_search")
+        semantic_memories = memory_manager.search_semantic_memories(user_id, "artificial intelligence")
+        knowledge_results = memory_manager.search_knowledge("AI definition")
+        
+        # Verify all memory operations were called
+        mock_episodic_memory.search_memories.assert_called_once()
+        mock_procedural_memory.search_memories.assert_called_once()
+        mock_pinecone_client.search_similar.assert_called_once()
+        mock_pinecone_client.search_knowledge.assert_called_once()

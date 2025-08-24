@@ -6,6 +6,7 @@ import logging
 from pymongo import MongoClient
 from pymongo.collection import Collection
 from bson.objectid import ObjectId
+import uuid
 
 from app.config import settings
 

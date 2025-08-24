@@ -1,513 +1,583 @@
-"""Tests for tool implementations."""
+"""Tests for the AI Agent tools."""
 
 import pytest
 from unittest.mock import MagicMock, patch, AsyncMock
-from datetime import datetime
-import json
+from datetime import datetime, timedelta
+from typing import Dict, Any, List
 
 from app.tools.web_search_tool import WebSearchTool
 from app.tools.product_search_tool import ProductSearchTool
 from app.tools.appointment_tool import AppointmentTool
-from app.tools.semantic_retrieval_tool import SemanticRetrievalTool
+from app.tools.semantic_retrieval_tool import KnowledgeRetrievalTool
+from app.tools.database_client import DatabaseClient
+from app.tools.tool_config import ToolConfig
 
 
 class TestWebSearchTool:
-    """Tests for web search tool."""
+    """Test the WebSearchTool."""
     
-    def test_init(self):
-        """Test initialization of web search tool."""
-        # Act
-        tool = WebSearchTool()
-        
-        # Assert
-        assert tool.name == "internet_search"
-        assert "search the internet" in tool.description.lower()
-
-    @patch('app.tools.web_search_tool.DDGS')
-    def test_run_success(self, mock_ddgs_cls):
-        """Test successful web search."""
-        # Arrange
-        mock_ddgs = MagicMock()
-        mock_results = [
+    @pytest.fixture
+    def web_search_tool(self):
+        """Create a WebSearchTool instance."""
+        return WebSearchTool()
+    
+    @pytest.fixture
+    def sample_search_results(self):
+        """Sample search results for testing."""
+        return [
             {
-                "title": "Python Tutorial",
-                "body": "Learn Python programming",
-                "href": "https://example.com/python"
+                "title": "AI and Machine Learning",
+                "link": "https://example.com/ai-ml",
+                "snippet": "Artificial Intelligence and Machine Learning are transforming industries..."
             },
             {
-                "title": "Advanced Python",
-                "body": "Advanced Python concepts",
-                "href": "https://example.com/advanced-python"
+                "title": "Python Programming",
+                "link": "https://example.com/python",
+                "snippet": "Python is a versatile programming language..."
             }
         ]
-        mock_ddgs.text.return_value = mock_results
-        mock_ddgs_cls.return_value.__enter__.return_value = mock_ddgs
-        
-        tool = WebSearchTool()
-        
-        # Act
-        result = tool._run("Python programming tutorial")
-        
-        # Assert
-        assert "Python Tutorial" in result
-        assert "Learn Python programming" in result
-        assert "https://example.com/python" in result
-        assert "Advanced Python" in result
-        mock_ddgs.text.assert_called_once_with("Python programming tutorial", max_results=5)
-
+    
+    def test_web_search_tool_initialization(self, web_search_tool):
+        """Test WebSearchTool initialization."""
+        assert web_search_tool.name == "web_search"
+        assert "Search the web" in web_search_tool.description
+        assert web_search_tool.return_direct is False
+    
     @patch('app.tools.web_search_tool.DDGS')
-    def test_run_no_results(self, mock_ddgs_cls):
-        """Test web search with no results."""
-        # Arrange
-        mock_ddgs = MagicMock()
-        mock_ddgs.text.return_value = []
-        mock_ddgs_cls.return_value.__enter__.return_value = mock_ddgs
+    def test_web_search_tool_search(self, mock_ddgs, web_search_tool, sample_search_results):
+        """Test web search functionality."""
+        # Mock the search results
+        mock_ddgs_instance = MagicMock()
+        mock_ddgs.return_value = mock_ddgs_instance
+        mock_ddgs_instance.text.return_value.__iter__.return_value = sample_search_results
         
-        tool = WebSearchTool()
+        query = "artificial intelligence"
+        result = web_search_tool._run(query)
         
-        # Act
-        result = tool._run("very obscure query that returns nothing")
+        # Verify the search was called
+        mock_ddgs_instance.text.assert_called_once_with(query, max_results=5)
         
-        # Assert
-        assert "No search results found" in result
-
+        # Verify the result format
+        assert "AI and Machine Learning" in result
+        assert "Python Programming" in result
+        assert "https://example.com/ai-ml" in result
+    
     @patch('app.tools.web_search_tool.DDGS')
-    def test_run_with_custom_max_results(self, mock_ddgs_cls):
-        """Test web search with custom max results."""
-        # Arrange
-        mock_ddgs = MagicMock()
-        mock_ddgs.text.return_value = [{"title": "Test", "body": "Test", "href": "test.com"}]
-        mock_ddgs_cls.return_value.__enter__.return_value = mock_ddgs
+    def test_web_search_tool_no_results(self, mock_ddgs, web_search_tool):
+        """Test web search when no results are found."""
+        # Mock empty search results
+        mock_ddgs_instance = MagicMock()
+        mock_ddgs.return_value = mock_ddgs_instance
+        mock_ddgs_instance.text.return_value.__iter__.return_value = []
         
-        tool = WebSearchTool()
+        query = "nonexistent query"
+        result = web_search_tool._run(query)
         
-        # Act
-        result = tool._run("test query", max_results=3)
-        
-        # Assert
-        mock_ddgs.text.assert_called_once_with("test query", max_results=3)
-
+        assert "No results found" in result
+    
     @patch('app.tools.web_search_tool.DDGS')
-    def test_run_exception_handling(self, mock_ddgs_cls):
-        """Test web search exception handling."""
-        # Arrange
-        mock_ddgs_cls.side_effect = Exception("Network error")
+    def test_web_search_tool_error_handling(self, mock_ddgs, web_search_tool):
+        """Test web search error handling."""
+        # Mock an exception
+        mock_ddgs.side_effect = Exception("Search error")
         
-        tool = WebSearchTool()
+        query = "test query"
+        result = web_search_tool._run(query)
         
-        # Act
-        result = tool._run("test query")
-        
-        # Assert
-        assert "Error performing search" in result
-        assert "Network error" in result
+        assert "Error performing web search" in result
+        assert "Search error" in result
 
 
 class TestProductSearchTool:
-    """Tests for product search tool."""
+    """Test the ProductSearchTool."""
     
-    @patch('app.tools.product_search_tool.DatabaseClient')
-    def test_init(self, mock_db_cls):
-        """Test initialization of product search tool."""
-        # Arrange
-        mock_db = MagicMock()
-        mock_db_cls.return_value = mock_db
-        
-        # Act
-        tool = ProductSearchTool()
-        
-        # Assert
-        assert tool.name == "product_search"
-        assert "search for products" in tool.description.lower()
-        assert tool.db_client == mock_db
-
-    @patch('app.tools.product_search_tool.DatabaseClient')
-    def test_run_success(self, mock_db_cls):
-        """Test successful product search."""
-        # Arrange
-        mock_db = MagicMock()
-        mock_products = [
+    @pytest.fixture
+    def product_search_tool(self):
+        """Create a ProductSearchTool instance."""
+        return ProductSearchTool()
+    
+    @pytest.fixture
+    def sample_products(self):
+        """Sample product data for testing."""
+        return [
             {
-                "_id": "product_1",
-                "name": "Laptop Pro",
-                "price": 1299.99,
+                "id": "prod1",
+                "name": "Laptop",
                 "category": "Electronics",
+                "price": 999.99,
                 "description": "High-performance laptop"
             },
             {
-                "_id": "product_2", 
-                "name": "Gaming Laptop",
-                "price": 1599.99,
+                "id": "prod2",
+                "name": "Smartphone",
                 "category": "Electronics",
-                "description": "Gaming laptop with RTX graphics"
+                "price": 599.99,
+                "description": "Latest smartphone model"
             }
         ]
-        mock_db.search_products.return_value = mock_products
-        mock_db_cls.return_value = mock_db
-        
-        tool = ProductSearchTool()
-        
-        # Act
-        result = tool._run("laptop")
-        
-        # Assert
-        assert "Laptop Pro" in result
-        assert "$1299.99" in result
-        assert "Gaming Laptop" in result
-        assert "$1599.99" in result
-        mock_db.search_products.assert_called_once_with("laptop", limit=5)
-
+    
+    def test_product_search_tool_initialization(self, product_search_tool):
+        """Test ProductSearchTool initialization."""
+        assert product_search_tool.name == "product_search"
+        assert "Search for products" in product_search_tool.description
+        assert product_search_tool.return_direct is False
+    
     @patch('app.tools.product_search_tool.DatabaseClient')
-    def test_run_no_products(self, mock_db_cls):
-        """Test product search with no results."""
-        # Arrange
-        mock_db = MagicMock()
-        mock_db.search_products.return_value = []
-        mock_db_cls.return_value = mock_db
+    def test_product_search_tool_search(self, mock_db_client, product_search_tool, sample_products):
+        """Test product search functionality."""
+        # Mock the database client
+        mock_db_instance = MagicMock()
+        mock_db_client.return_value = mock_db_instance
+        mock_db_instance.search_products.return_value = sample_products
         
-        tool = ProductSearchTool()
+        query = "laptop"
+        result = product_search_tool._run(query)
         
-        # Act
-        result = tool._run("nonexistent product")
+        # Verify the search was called
+        mock_db_instance.search_products.assert_called_once_with(query)
         
-        # Assert
+        # Verify the result format
+        assert "Laptop" in result
+        assert "Smartphone" in result
+        assert "999.99" in result
+        assert "Electronics" in result
+    
+    @patch('app.tools.product_search_tool.DatabaseClient')
+    def test_product_search_tool_no_results(self, mock_db_client, product_search_tool):
+        """Test product search when no results are found."""
+        # Mock empty search results
+        mock_db_instance = MagicMock()
+        mock_db_client.return_value = mock_db_instance
+        mock_db_instance.search_products.return_value = []
+        
+        query = "nonexistent product"
+        result = product_search_tool._run(query)
+        
         assert "No products found" in result
-
+    
     @patch('app.tools.product_search_tool.DatabaseClient')
-    def test_run_with_custom_limit(self, mock_db_cls):
-        """Test product search with custom limit."""
-        # Arrange
-        mock_db = MagicMock()
-        mock_db.search_products.return_value = []
-        mock_db_cls.return_value = mock_db
+    def test_product_search_tool_error_handling(self, mock_db_client, product_search_tool):
+        """Test product search error handling."""
+        # Mock an exception
+        mock_db_client.side_effect = Exception("Database error")
         
-        tool = ProductSearchTool()
+        query = "test query"
+        result = product_search_tool._run(query)
         
-        # Act
-        result = tool._run("laptop", limit=10)
-        
-        # Assert
-        mock_db.search_products.assert_called_once_with("laptop", limit=10)
-
+        assert "Error searching products" in result
+        assert "Database error" in result
+    
     @patch('app.tools.product_search_tool.DatabaseClient')
-    def test_run_exception_handling(self, mock_db_cls):
-        """Test product search exception handling."""
-        # Arrange
-        mock_db = MagicMock()
-        mock_db.search_products.side_effect = Exception("Database error")
-        mock_db_cls.return_value = mock_db
+    def test_product_search_tool_with_category_filter(self, mock_db_client, product_search_tool, sample_products):
+        """Test product search with category filter."""
+        # Mock the database client
+        mock_db_instance = MagicMock()
+        mock_db_client.return_value = mock_db_instance
+        mock_db_instance.search_products.return_value = [sample_products[0]]  # Only laptop
         
-        tool = ProductSearchTool()
+        query = "laptop electronics"
+        result = product_search_tool._run(query)
         
-        # Act
-        result = tool._run("laptop")
+        # Verify the search was called
+        mock_db_instance.search_products.assert_called_once_with(query)
         
-        # Assert
-        assert "Error searching for products" in result
+        # Verify only laptop is in results
+        assert "Laptop" in result
+        assert "Smartphone" not in result
 
 
 class TestAppointmentTool:
-    """Tests for appointment tool."""
+    """Test the AppointmentTool."""
+    
+    @pytest.fixture
+    def appointment_tool(self):
+        """Create an AppointmentTool instance."""
+        return AppointmentTool()
+    
+    @pytest.fixture
+    def sample_appointment_data(self):
+        """Sample appointment data for testing."""
+        return {
+            "user_id": "user123",
+            "service": "consultation",
+            "date": "2024-01-15",
+            "time": "14:00",
+            "duration": 60,
+            "notes": "AI consultation session"
+        }
+    
+    def test_appointment_tool_initialization(self, appointment_tool):
+        """Test AppointmentTool initialization."""
+        assert appointment_tool.name == "appointment"
+        assert "Book appointments" in appointment_tool.description
+        assert appointment_tool.return_direct is False
     
     @patch('app.tools.appointment_tool.DatabaseClient')
-    @patch('app.tools.appointment_tool.spacy.load')
-    def test_init(self, mock_spacy_load, mock_db_cls):
-        """Test initialization of appointment tool."""
-        # Arrange
-        mock_nlp = MagicMock()
-        mock_spacy_load.return_value = mock_nlp
-        mock_db = MagicMock()
-        mock_db_cls.return_value = mock_db
-        
-        # Act
-        tool = AppointmentTool()
-        
-        # Assert
-        assert tool.name == "appointment_tool"
-        assert "manage appointments" in tool.description.lower()
-        assert tool.nlp == mock_nlp
-        assert tool.db_client == mock_db
-
-    @patch('app.tools.appointment_tool.DatabaseClient')
-    @patch('app.tools.appointment_tool.spacy.load')
-    def test_extract_appointment_info(self, mock_spacy_load, mock_db_cls):
-        """Test extracting appointment information from text."""
-        # Arrange
-        mock_nlp = MagicMock()
-        mock_doc = MagicMock()
-        
-        # Mock entity extraction
-        mock_person = MagicMock()
-        mock_person.label_ = "PERSON"
-        mock_person.text = "Dr. Smith"
-        
-        mock_date = MagicMock()
-        mock_date.label_ = "DATE"
-        mock_date.text = "tomorrow"
-        
-        mock_time = MagicMock()
-        mock_time.label_ = "TIME"
-        mock_time.text = "2 PM"
-        
-        mock_doc.ents = [mock_person, mock_date, mock_time]
-        mock_nlp.return_value = mock_doc
-        mock_spacy_load.return_value = mock_nlp
-        
-        tool = AppointmentTool()
-        
-        # Act
-        info = tool._extract_appointment_info("Schedule appointment with Dr. Smith tomorrow at 2 PM")
-        
-        # Assert
-        assert "Dr. Smith" in info["providers"]
-        assert "tomorrow" in info["dates"]
-        assert "2 PM" in info["times"]
-
-    @patch('app.tools.appointment_tool.DatabaseClient')
-    @patch('app.tools.appointment_tool.spacy.load')
-    def test_run_book_appointment(self, mock_spacy_load, mock_db_cls):
+    def test_appointment_tool_book_appointment(self, mock_db_client, appointment_tool, sample_appointment_data):
         """Test booking an appointment."""
-        # Arrange
-        mock_nlp = MagicMock()
-        mock_spacy_load.return_value = mock_nlp
+        # Mock the database client
+        mock_db_instance = MagicMock()
+        mock_db_client.return_value = mock_db_instance
+        mock_db_instance.book_appointment.return_value = "apt123"
         
-        mock_db = MagicMock()
-        mock_db.create_appointment.return_value = "appointment_123"
-        mock_db_cls.return_value = mock_db
+        # Test booking
+        result = appointment_tool._run(
+            user_id=sample_appointment_data["user_id"],
+            service=sample_appointment_data["service"],
+            date=sample_appointment_data["date"],
+            time=sample_appointment_data["time"],
+            duration=sample_appointment_data["duration"],
+            notes=sample_appointment_data["notes"]
+        )
         
-        tool = AppointmentTool()
-        tool._extract_appointment_info = MagicMock(return_value={
-            "providers": ["Dr. Smith"],
-            "dates": ["2024-01-15"],
-            "times": ["2 PM"],
-            "purposes": ["checkup"]
-        })
+        # Verify the booking was called
+        mock_db_instance.book_appointment.assert_called_once()
         
-        # Act
-        result = tool._run("book appointment with Dr. Smith on January 15th at 2 PM for checkup")
-        
-        # Assert
-        assert "appointment has been booked" in result.lower()
-        assert "appointment_123" in result
-        mock_db.create_appointment.assert_called_once()
-
+        # Verify the result
+        assert "Appointment booked successfully" in result
+        assert "apt123" in result
+    
     @patch('app.tools.appointment_tool.DatabaseClient')
-    @patch('app.tools.appointment_tool.spacy.load')
-    def test_run_list_appointments(self, mock_spacy_load, mock_db_cls):
-        """Test listing appointments."""
-        # Arrange
-        mock_nlp = MagicMock()
-        mock_spacy_load.return_value = mock_nlp
+    def test_appointment_tool_check_availability(self, mock_db_client, appointment_tool):
+        """Test checking appointment availability."""
+        # Mock the database client
+        mock_db_instance = MagicMock()
+        mock_db_client.return_value = mock_db_instance
+        mock_db_instance.check_availability.return_value = ["09:00", "10:00", "14:00"]
         
-        mock_db = MagicMock()
-        mock_appointments = [
+        # Test availability check
+        result = appointment_tool._run(
+            action="check_availability",
+            date="2024-01-15",
+            service="consultation"
+        )
+        
+        # Verify the availability check was called
+        mock_db_instance.check_availability.assert_called_once()
+        
+        # Verify the result
+        assert "Available times" in result
+        assert "09:00" in result
+        assert "14:00" in result
+    
+    @patch('app.tools.appointment_tool.DatabaseClient')
+    def test_appointment_tool_reschedule_appointment(self, mock_db_client, appointment_tool):
+        """Test rescheduling an appointment."""
+        # Mock the database client
+        mock_db_instance = MagicMock()
+        mock_db_client.return_value = mock_db_instance
+        mock_db_instance.reschedule_appointment.return_value = True
+        
+        # Test rescheduling
+        result = appointment_tool._run(
+            action="reschedule",
+            appointment_id="apt123",
+            new_date="2024-01-16",
+            new_time="15:00"
+        )
+        
+        # Verify the reschedule was called
+        mock_db_instance.reschedule_appointment.assert_called_once()
+        
+        # Verify the result
+        assert "Appointment rescheduled successfully" in result
+    
+    @patch('app.tools.appointment_tool.DatabaseClient')
+    def test_appointment_tool_cancel_appointment(self, mock_db_client, appointment_tool):
+        """Test canceling an appointment."""
+        # Mock the database client
+        mock_db_instance = MagicMock()
+        mock_db_client.return_value = mock_db_instance
+        mock_db_instance.cancel_appointment.return_value = True
+        
+        # Test cancellation
+        result = appointment_tool._run(
+            action="cancel",
+            appointment_id="apt123"
+        )
+        
+        # Verify the cancellation was called
+        mock_db_instance.cancel_appointment.assert_called_once()
+        
+        # Verify the result
+        assert "Appointment cancelled successfully" in result
+    
+    @patch('app.tools.appointment_tool.DatabaseClient')
+    def test_appointment_tool_invalid_action(self, mock_db_client, appointment_tool):
+        """Test appointment tool with invalid action."""
+        # Mock the database client
+        mock_db_instance = MagicMock()
+        mock_db_client.return_value = mock_db_instance
+        
+        # Test invalid action
+        result = appointment_tool._run(action="invalid_action")
+        
+        # Verify no database calls were made
+        mock_db_instance.book_appointment.assert_not_called()
+        mock_db_instance.check_availability.assert_not_called()
+        
+        # Verify error message
+        assert "Invalid action" in result
+    
+    @patch('app.tools.appointment_tool.DatabaseClient')
+    def test_appointment_tool_error_handling(self, mock_db_client, appointment_tool):
+        """Test appointment tool error handling."""
+        # Mock an exception
+        mock_db_client.side_effect = Exception("Database error")
+        
+        result = appointment_tool._run(
+            user_id="user123",
+            service="consultation",
+            date="2024-01-15",
+            time="14:00"
+        )
+        
+        assert "Error processing appointment" in result
+        assert "Database error" in result
+
+
+class TestKnowledgeRetrievalTool:
+    """Test the KnowledgeRetrievalTool."""
+    
+    @pytest.fixture
+    def knowledge_tool(self):
+        """Create a KnowledgeRetrievalTool instance."""
+        return KnowledgeRetrievalTool()
+    
+    @pytest.fixture
+    def sample_knowledge_results(self):
+        """Sample knowledge results for testing."""
+        return [
             {
-                "_id": "appointment_1",
-                "provider": "Dr. Smith",
-                "date": "2024-01-15",
-                "time": "2 PM",
-                "purpose": "checkup"
+                "content": "AI is artificial intelligence",
+                "source": "textbook",
+                "relevance": 0.95
             },
             {
-                "_id": "appointment_2",
-                "provider": "Dr. Johnson", 
-                "date": "2024-01-20",
-                "time": "10 AM",
-                "purpose": "consultation"
+                "content": "Machine learning is a subset of AI",
+                "source": "research_paper",
+                "relevance": 0.88
             }
         ]
-        mock_db.get_user_appointments.return_value = mock_appointments
-        mock_db_cls.return_value = mock_db
-        
-        tool = AppointmentTool()
-        
-        # Act
-        result = tool._run("list my appointments")
-        
-        # Assert
-        assert "Dr. Smith" in result
-        assert "2024-01-15" in result
-        assert "Dr. Johnson" in result
-        assert "2024-01-20" in result
-
-    @patch('app.tools.appointment_tool.DatabaseClient')
-    @patch('app.tools.appointment_tool.spacy.load')
-    def test_run_cancel_appointment(self, mock_spacy_load, mock_db_cls):
-        """Test canceling an appointment."""
-        # Arrange
-        mock_nlp = MagicMock()
-        mock_spacy_load.return_value = mock_nlp
-        
-        mock_db = MagicMock()
-        mock_db.cancel_appointment.return_value = True
-        mock_db_cls.return_value = mock_db
-        
-        tool = AppointmentTool()
-        
-        # Act
-        result = tool._run("cancel appointment appointment_123")
-        
-        # Assert
-        assert "appointment has been cancelled" in result.lower()
-        mock_db.cancel_appointment.assert_called_once_with("appointment_123")
-
-
-class TestSemanticRetrievalTool:
-    """Tests for semantic retrieval tool."""
     
-    def test_init(self):
-        """Test initialization of semantic retrieval tool."""
-        # Act
-        tool = SemanticRetrievalTool()
+    def test_knowledge_retrieval_tool_initialization(self, knowledge_tool):
+        """Test KnowledgeRetrievalTool initialization."""
+        assert knowledge_tool.name == "knowledge_retrieval"
+        assert "Retrieve knowledge" in knowledge_tool.description
+        assert knowledge_tool.return_direct is False
+    
+    @patch('app.tools.semantic_retrieval_tool.PineconeClient')
+    def test_knowledge_retrieval_tool_search(self, mock_pinecone_client, knowledge_tool, sample_knowledge_results):
+        """Test knowledge retrieval functionality."""
+        # Mock the Pinecone client
+        mock_pinecone_instance = MagicMock()
+        mock_pinecone_client.return_value = mock_pinecone_instance
+        mock_pinecone_instance.search_knowledge.return_value = sample_knowledge_results
         
-        # Assert
-        assert tool.name == "semantic_retrieval"
-        assert "retrieve relevant information" in tool.description.lower()
-        assert tool.memory_manager is not None
+        query = "What is artificial intelligence?"
+        result = knowledge_tool._run(query)
+        
+        # Verify the search was called
+        mock_pinecone_instance.search_knowledge.assert_called_once_with(query)
+        
+        # Verify the result format
+        assert "AI is artificial intelligence" in result
+        assert "Machine learning is a subset of AI" in result
+        assert "textbook" in result
+        assert "research_paper" in result
+    
+    @patch('app.tools.semantic_retrieval_tool.PineconeClient')
+    def test_knowledge_retrieval_tool_no_results(self, mock_pinecone_client, knowledge_tool):
+        """Test knowledge retrieval when no results are found."""
+        # Mock empty search results
+        mock_pinecone_instance = MagicMock()
+        mock_pinecone_client.return_value = mock_pinecone_instance
+        mock_pinecone_instance.search_knowledge.return_value = []
+        
+        query = "nonexistent knowledge"
+        result = knowledge_tool._run(query)
+        
+        assert "No relevant knowledge found" in result
+    
+    @patch('app.tools.semantic_retrieval_tool.PineconeClient')
+    def test_knowledge_retrieval_tool_error_handling(self, mock_pinecone_client, knowledge_tool):
+        """Test knowledge retrieval error handling."""
+        # Mock an exception
+        mock_pinecone_client.side_effect = Exception("Pinecone error")
+        
+        query = "test query"
+        result = knowledge_tool._run(query)
+        
+        assert "Error retrieving knowledge" in result
+        assert "Pinecone error" in result
 
-    @patch('app.tools.semantic_retrieval_tool.MemoryManager')
-    def test_run_success(self, mock_memory_manager_cls):
-        """Test successful semantic retrieval."""
-        # Arrange
-        mock_memory_manager = MagicMock()
-        mock_documents = [
-            (MagicMock(page_content="User likes coffee in the morning", metadata={"confidence": 0.95}), 0.95),
-            (MagicMock(page_content="User prefers remote work", metadata={"confidence": 0.87}), 0.87)
+
+class TestDatabaseClient:
+    """Test the DatabaseClient."""
+    
+    @pytest.fixture
+    def db_client(self):
+        """Create a DatabaseClient instance."""
+        return DatabaseClient()
+    
+    @patch('app.tools.database_client.MongoClient')
+    def test_database_client_initialization(self, mock_mongo_client, db_client):
+        """Test DatabaseClient initialization."""
+        assert db_client.database is not None
+        mock_mongo_client.assert_called_once()
+    
+    @patch('app.tools.database_client.MongoClient')
+    def test_database_client_search_products(self, mock_mongo_client, db_client):
+        """Test product search in database."""
+        # Mock the database and collection
+        mock_collection = MagicMock()
+        mock_database = MagicMock()
+        mock_mongo_client.return_value.__getitem__.return_value = mock_database
+        mock_database.__getitem__.return_value = mock_collection
+        
+        # Mock search results
+        mock_collection.find.return_value = [
+            {"name": "Laptop", "price": 999.99},
+            {"name": "Smartphone", "price": 599.99}
         ]
-        mock_memory_manager.retrieve_semantic_memories.return_value = mock_documents
-        mock_memory_manager_cls.return_value = mock_memory_manager
         
-        tool = SemanticRetrievalTool()
+        query = "laptop"
+        results = db_client.search_products(query)
         
-        # Act
-        result = tool._run("coffee preferences", user_id="test_user")
+        # Verify the search was performed
+        mock_collection.find.assert_called_once()
+        assert len(results) == 2
+        assert results[0]["name"] == "Laptop"
+    
+    @patch('app.tools.database_client.MongoClient')
+    def test_database_client_book_appointment(self, mock_mongo_client, db_client):
+        """Test booking appointment in database."""
+        # Mock the database and collection
+        mock_collection = MagicMock()
+        mock_database = MagicMock()
+        mock_mongo_client.return_value.__getitem__.return_value = mock_database
+        mock_database.__getitem__.return_value = mock_collection
         
-        # Assert
-        assert "coffee in the morning" in result
-        assert "remote work" in result
-        assert "confidence: 0.95" in result
-        assert "confidence: 0.87" in result
-        mock_memory_manager.retrieve_semantic_memories.assert_called_once_with(
-            user_id="test_user",
-            query="coffee preferences",
-            k=5
-        )
+        # Mock appointment insertion
+        mock_collection.insert_one.return_value.inserted_id = "apt123"
+        
+        appointment_data = {
+            "user_id": "user123",
+            "service": "consultation",
+            "date": "2024-01-15",
+            "time": "14:00"
+        }
+        
+        result = db_client.book_appointment(appointment_data)
+        
+        # Verify the appointment was inserted
+        mock_collection.insert_one.assert_called_once()
+        assert result == "apt123"
+    
+    @patch('app.tools.database_client.MongoClient')
+    def test_database_client_check_availability(self, mock_mongo_client, db_client):
+        """Test checking appointment availability."""
+        # Mock the database and collection
+        mock_collection = MagicMock()
+        mock_database = MagicMock()
+        mock_mongo_client.return_value.__getitem__.return_value = mock_database
+        mock_database.__getitem__.return_value = mock_collection
+        
+        # Mock availability check
+        mock_collection.find.return_value = [
+            {"time": "09:00"},
+            {"time": "10:00"},
+            {"time": "14:00"}
+        ]
+        
+        date = "2024-01-15"
+        service = "consultation"
+        available_times = db_client.check_availability(date, service)
+        
+        # Verify the availability check was performed
+        mock_collection.find.assert_called_once()
+        assert len(available_times) == 3
+        assert "09:00" in available_times
 
-    @patch('app.tools.semantic_retrieval_tool.MemoryManager')
-    def test_run_no_results(self, mock_memory_manager_cls):
-        """Test semantic retrieval with no results."""
-        # Arrange
-        mock_memory_manager = MagicMock()
-        mock_memory_manager.retrieve_semantic_memories.return_value = []
-        mock_memory_manager_cls.return_value = mock_memory_manager
-        
-        tool = SemanticRetrievalTool()
-        
-        # Act
-        result = tool._run("nonexistent information", user_id="test_user")
-        
-        # Assert
-        assert "No relevant information found" in result
 
-    @patch('app.tools.semantic_retrieval_tool.MemoryManager')
-    def test_run_with_custom_k(self, mock_memory_manager_cls):
-        """Test semantic retrieval with custom k parameter."""
-        # Arrange
-        mock_memory_manager = MagicMock()
-        mock_memory_manager.retrieve_semantic_memories.return_value = []
-        mock_memory_manager_cls.return_value = mock_memory_manager
+class TestToolConfig:
+    """Test the ToolConfig."""
+    
+    def test_tool_config_initialization(self):
+        """Test ToolConfig initialization."""
+        config = ToolConfig()
         
-        tool = SemanticRetrievalTool()
+        assert hasattr(config, 'WEB_SEARCH_ENABLED')
+        assert hasattr(config, 'PRODUCT_SEARCH_ENABLED')
+        assert hasattr(config, 'APPOINTMENT_ENABLED')
+        assert hasattr(config, 'KNOWLEDGE_RETRIEVAL_ENABLED')
+    
+    def test_tool_config_default_values(self):
+        """Test ToolConfig default values."""
+        config = ToolConfig()
         
-        # Act
-        result = tool._run("test query", user_id="test_user", k=10)
-        
-        # Assert
-        mock_memory_manager.retrieve_semantic_memories.assert_called_once_with(
-            user_id="test_user",
-            query="test query",
-            k=10
-        )
-
-    @patch('app.tools.semantic_retrieval_tool.MemoryManager')
-    def test_run_exception_handling(self, mock_memory_manager_cls):
-        """Test semantic retrieval exception handling."""
-        # Arrange
-        mock_memory_manager = MagicMock()
-        mock_memory_manager.retrieve_semantic_memories.side_effect = Exception("Retrieval error")
-        mock_memory_manager_cls.return_value = mock_memory_manager
-        
-        tool = SemanticRetrievalTool()
-        
-        # Act
-        result = tool._run("test query", user_id="test_user")
-        
-        # Assert
-        assert "Error retrieving information" in result
-        assert "Retrieval error" in result
-
-    def test_missing_user_id(self):
-        """Test semantic retrieval without user_id."""
-        # Arrange
-        tool = SemanticRetrievalTool()
-        
-        # Act
-        result = tool._run("test query")
-        
-        # Assert
-        assert "user_id is required" in result.lower()
+        assert config.WEB_SEARCH_ENABLED is True
+        assert config.PRODUCT_SEARCH_ENABLED is True
+        assert config.APPOINTMENT_ENABLED is True
+        assert config.KNOWLEDGE_RETRIEVAL_ENABLED is True
+    
+    def test_tool_config_environment_override(self):
+        """Test ToolConfig environment variable override."""
+        with patch.dict('os.environ', {
+            'WEB_SEARCH_ENABLED': 'false',
+            'PRODUCT_SEARCH_ENABLED': 'false'
+        }):
+            config = ToolConfig()
+            
+            assert config.WEB_SEARCH_ENABLED is False
+            assert config.PRODUCT_SEARCH_ENABLED is False
+            assert config.APPOINTMENT_ENABLED is True  # Default value
+            assert config.KNOWLEDGE_RETRIEVAL_ENABLED is True  # Default value
 
 
 class TestToolIntegration:
-    """Integration tests for tools working together."""
+    """Integration tests for tools."""
     
-    @patch('app.tools.web_search_tool.DDGS')
-    @patch('app.tools.product_search_tool.DatabaseClient')
-    def test_web_search_and_product_search_integration(self, mock_product_db_cls, mock_ddgs_cls):
-        """Test web search and product search working together."""
-        # Arrange
-        # Web search mock
-        mock_ddgs = MagicMock()
-        mock_ddgs.text.return_value = [
-            {"title": "Best Laptops 2024", "body": "Top laptop reviews", "href": "reviews.com"}
-        ]
-        mock_ddgs_cls.return_value.__enter__.return_value = mock_ddgs
-        
-        # Product search mock
-        mock_product_db = MagicMock()
-        mock_product_db.search_products.return_value = [
-            {"name": "MacBook Pro", "price": 1999.99, "category": "Laptops"}
-        ]
-        mock_product_db_cls.return_value = mock_product_db
-        
+    @pytest.mark.asyncio
+    async def test_tools_with_memory_integration(self):
+        """Test tools integration with memory system."""
+        # This would test how tools interact with the memory system
+        # For now, we'll test basic tool functionality
         web_tool = WebSearchTool()
         product_tool = ProductSearchTool()
+        appointment_tool = AppointmentTool()
+        knowledge_tool = KnowledgeRetrievalTool()
         
-        # Act
-        web_result = web_tool._run("best laptops 2024")
-        product_result = product_tool._run("laptop")
+        # Verify all tools are properly initialized
+        assert web_tool.name == "web_search"
+        assert product_tool.name == "product_search"
+        assert appointment_tool.name == "appointment"
+        assert knowledge_tool.name == "knowledge_retrieval"
         
-        # Assert
-        assert "Best Laptops 2024" in web_result
-        assert "MacBook Pro" in product_result
-        assert "$1999.99" in product_result
-
-    def test_tool_error_isolation(self):
-        """Test that tool errors don't affect other tools."""
-        # Arrange
-        tool1 = WebSearchTool()
-        tool2 = ProductSearchTool()
+        # Verify all tools have descriptions
+        assert len(web_tool.description) > 0
+        assert len(product_tool.description) > 0
+        assert len(appointment_tool.description) > 0
+        assert len(knowledge_tool.description) > 0
+    
+    def test_tool_error_handling_consistency(self):
+        """Test that all tools handle errors consistently."""
+        tools = [
+            WebSearchTool(),
+            ProductSearchTool(),
+            AppointmentTool(),
+            KnowledgeRetrievalTool()
+        ]
         
-        with patch('app.tools.web_search_tool.DDGS', side_effect=Exception("Web error")):
-            with patch('app.tools.product_search_tool.DatabaseClient') as mock_db_cls:
-                mock_db = MagicMock()
-                mock_db.search_products.return_value = [{"name": "Test Product"}]
-                mock_db_cls.return_value = mock_db
-                
-                # Act
-                web_result = tool1._run("test query")
-                product_result = tool2._run("test product")
-                
-                # Assert
-                assert "Error performing search" in web_result
-                assert "Test Product" in product_result  # Product search should still work
+        for tool in tools:
+            # All tools should have error handling
+            assert hasattr(tool, '_run')
+            
+            # Test with invalid input to ensure error handling
+            try:
+                result = tool._run("")
+                # Should return an error message, not raise an exception
+                assert isinstance(result, str)
+            except Exception as e:
+                # If an exception is raised, it should be handled gracefully
+                assert False, f"Tool {tool.name} raised an exception: {e}"

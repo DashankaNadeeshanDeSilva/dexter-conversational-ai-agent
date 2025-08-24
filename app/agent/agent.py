@@ -13,10 +13,8 @@ from langchain_core.tools import BaseTool, Tool
 from langchain_core.output_parsers import StrOutputParser, JsonOutputParser
 from langchain_core.runnables import RunnablePassthrough, RunnableConfig
 from langgraph.graph import StateGraph, END
-#from langgraph.prebuilt import ToolExecutor, ToolInvocation
 from langgraph.prebuilt import ToolNode 
 import pydantic
-from langgraph.checkpoint.sqlite import SqliteSaver
 
 from app.config import settings
 from app.memory.memory_manager import MemoryManager, MemoryType
@@ -27,8 +25,6 @@ from app.tools.appointment_tool import AppointmentTool
 from app.agent.memory_utils import AgentMemoryUtils
 
 logger = logging.getLogger(__name__)
-
-checkpointer = SqliteSaver("dexter_graph_state.sqlite")
 
 # Define the agent state
 class AgentState(pydantic.BaseModel):
@@ -304,7 +300,7 @@ class ReActAgent:
         workflow.add_edge("use_tool", "think")
         
         # Compile the graph
-        return workflow.compile(checkpointer=checkpointer)
+        return workflow.compile()
     
     async def process_message(
         self,

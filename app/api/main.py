@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="AI Agent with Memory",
     description="An AI agent with short-term, semantic, episodic, and procedural memory",
-    version="1.0.0",
+    version="0.0.0",
 )
 
 # Set up CORS

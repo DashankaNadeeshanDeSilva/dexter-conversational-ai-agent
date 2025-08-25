@@ -1,7 +1,7 @@
 import os
-from langchain.document_loaders import PyPDFLoader, Docx2txtLoader, TextLoader, DirectoryLoader
+from langchain_community.document_loaders import PyPDFLoader, Docx2txtLoader, TextLoader, DirectoryLoader
 from typing import List
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from app.db_clients.pinecone_client import PineconeClient
 import logging
 from langchain_core.documents import Document  # Updated import

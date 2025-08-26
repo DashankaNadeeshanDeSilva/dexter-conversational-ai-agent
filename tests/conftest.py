@@ -160,17 +160,14 @@ def mock_memory_manager(mock_mongodb_client, mock_pinecone_client, mock_short_te
 @pytest.fixture
 def mock_tools():
     """Create mock tools for testing."""
-    tools = [
-        MagicMock(spec=WebSearchTool, name="web_search", description="Search the web"),
-        MagicMock(spec=KnowledgeRetrievalTool, name="knowledge_retrieval", description="Retrieve knowledge"),
-        MagicMock(spec=ProductSearchTool, name="product_search", description="Search products"),
-        MagicMock(spec=AppointmentTool, name="appointment", description="Book appointments")
-    ]
+    tools = []
+    tool_names = ["internet_search", "product_search", "appointment_management", "company_knowledge_retrieval"]
     
-    for tool in tools:
-        tool.invoke = MagicMock(return_value="Tool result")
-        tool.name = tool.name
-        tool.description = tool.description
+    for name in tool_names:
+        tool = MagicMock()
+        tool.name = name  # Set the name attribute directly
+        tool.description = f"Mock {name} tool"
+        tools.append(tool)
     
     return tools
 
@@ -204,24 +201,29 @@ def mock_react_agent():
 
 @pytest.fixture
 def test_app():
-    """Create a test FastAPI app instance with mocked dependencies."""
-    # Import here to avoid MongoDB connection during test setup
-    from app.api.main import app
-    
-    # Mock the memory manager and agent in the app
-    with patch('app.api.main.memory_manager') as mock_mm, \
-         patch('app.api.main.agent') as mock_agent:
-        
-        # Set up mock memory manager
-        mock_mm.create_conversation = MagicMock(return_value="test_conv_id")
-        mock_mm.create_session = MagicMock(return_value="test_session_id")
-        mock_mm.add_message_to_short_term_memory = MagicMock()
-        mock_mm.store_episodic_memory = MagicMock(return_value="test_episodic_id")
-        
-        # Set up mock agent
-        mock_agent.process_message = AsyncMock(return_value="Test response")
-        
-        yield app
+    """Create a test FastAPI app instance with mocked dependencies without hitting real DB."""
+    # Patch MemoryManager BEFORE importing the FastAPI app so module-level init uses the mock
+    with patch('app.memory.memory_manager.MemoryManager') as MockMM:
+        mock_mm_instance = MagicMock()
+        MockMM.return_value = mock_mm_instance
+        # Provide minimal methods used by the API
+        mock_mm_instance.create_conversation = MagicMock(return_value="test_conv_id")
+        mock_mm_instance.create_session = MagicMock(return_value="test_session_id")
+        mock_mm_instance.add_message_to_short_term_memory = MagicMock()
+        mock_mm_instance.store_episodic_memory = MagicMock(return_value="test_episodic_id")
+        mock_mm_instance.get_user_conversations = MagicMock(return_value=[])
+        mock_mm_instance.get_conversation = MagicMock(return_value={"_id": "x", "messages": []})
+        mock_mm_instance.retrieve_episodic_memories = MagicMock(return_value=[])
+        mock_mm_instance.retrieve_procedural_memories = MagicMock(return_value=[])
+        mock_mm_instance.search_semantic_memories = MagicMock(return_value=[])
+
+        # Now import app; it will bind to the mocked MemoryManager
+        from app.api.main import app as fastapi_app
+
+        # Patch agent on the module after import to avoid LLM calls
+        with patch('app.api.main.agent') as mock_agent:
+            mock_agent.process_message = AsyncMock(return_value="Test response")
+            yield fastapi_app
 
 
 @pytest.fixture

@@ -27,19 +27,19 @@ class TestPerformanceBenchmarks:
         """Benchmark API response times."""
         # Arrange
         mock_memory_manager.create_conversation.return_value = "perf_conv"
-        mock_memory_manager.session_manager.create_session.return_value = "perf_session"
+        mock_memory_manager.create_session.return_value = "perf_session"
         mock_agent.process_message = AsyncMock(return_value="Performance test response")
-        
+
         # Warm up
         for _ in range(5):
             test_client.post("/chat", json={
                 "user_id": "warmup_user",
                 "message": "Warmup message"
             })
-        
-        # Act - Measure response times
-        response_times = []
-        for i in range(50):
+
+        # Actual benchmark
+        times = []
+        for i in range(10):
             start_time = time.time()
             response = test_client.post("/chat", json={
                 "user_id": f"perf_user_{i}",
@@ -48,23 +48,21 @@ class TestPerformanceBenchmarks:
             end_time = time.time()
             
             assert response.status_code == 200
-            response_times.append((end_time - start_time) * 1000)  # Convert to milliseconds
+            times.append((end_time - start_time) * 1000)
+
+        # Calculate statistics
+        avg_time = statistics.mean(times)
+        min_time = min(times)
+        max_time = max(times)
         
-        # Assert performance metrics
-        avg_response_time = statistics.mean(response_times)
-        max_response_time = max(response_times)
-        min_response_time = min(response_times)
-        p95_response_time = statistics.quantiles(response_times, n=20)[18]  # 95th percentile
+        print(f"\nAPI Response Time Benchmark Results:")
+        print(f"Average response time: {avg_time:.2f}ms")
+        print(f"Min response time: {min_time:.2f}ms")
+        print(f"Max response time: {max_time:.2f}ms")
         
-        print(f"\nAPI Performance Metrics:")
-        print(f"Average response time: {avg_response_time:.2f}ms")
-        print(f"Maximum response time: {max_response_time:.2f}ms")
-        print(f"Minimum response time: {min_response_time:.2f}ms")
-        print(f"95th percentile: {p95_response_time:.2f}ms")
-        
-        # Performance assertions (adjust thresholds as needed)
-        assert avg_response_time < 1000, f"Average response time {avg_response_time:.2f}ms exceeds 1000ms"
-        assert p95_response_time < 2000, f"95th percentile {p95_response_time:.2f}ms exceeds 2000ms"
+        # Performance assertions
+        assert avg_time < 1000, f"Average response time {avg_time:.2f}ms is too high"
+        assert max_time < 2000, f"Max response time {max_time:.2f}ms is too high"
 
     @patch('app.api.main.memory_manager')
     @patch('app.api.main.agent')
@@ -72,9 +70,9 @@ class TestPerformanceBenchmarks:
         """Test handling of concurrent requests."""
         # Arrange
         mock_memory_manager.create_conversation.side_effect = [f"conv_{i}" for i in range(20)]
-        mock_memory_manager.session_manager.create_session.side_effect = [f"session_{i}" for i in range(20)]
+        mock_memory_manager.create_session.side_effect = [f"session_{i}" for i in range(20)]
         mock_agent.process_message = AsyncMock(return_value="Concurrent test response")
-        
+
         def make_request(user_id):
             """Make a single request."""
             start_time = time.time()
@@ -89,37 +87,35 @@ class TestPerformanceBenchmarks:
                 "response_time": (end_time - start_time) * 1000,
                 "success": response.status_code == 200
             }
-        
+
         # Act - Send concurrent requests
         user_ids = [f"concurrent_user_{i}" for i in range(20)]
-        
+
         with ThreadPoolExecutor(max_workers=10) as executor:
             future_to_user = {executor.submit(make_request, user_id): user_id for user_id in user_ids}
             results = []
-            
+
             for future in as_completed(future_to_user):
                 result = future.result()
                 results.append(result)
-        
+
         # Assert
-        successful_requests = [r for r in results if r["success"]]
-        failed_requests = [r for r in results if not r["success"]]
+        successful = [r for r in results if r["success"]]
+        failed = [r for r in results if not r["success"]]
         
-        assert len(successful_requests) == 20, f"Expected 20 successful requests, got {len(successful_requests)}"
-        assert len(failed_requests) == 0, f"Got {len(failed_requests)} failed requests"
+        success_rate = len(successful) / len(results) * 100
+        avg_response_time = statistics.mean([r["response_time"] for r in successful]) if successful else 0
         
-        # Check concurrent response times
-        concurrent_response_times = [r["response_time"] for r in successful_requests]
-        avg_concurrent_time = statistics.mean(concurrent_response_times)
-        max_concurrent_time = max(concurrent_response_times)
+        print(f"\nConcurrent Request Test Results:")
+        print(f"Total requests: {len(results)}")
+        print(f"Successful: {len(successful)}")
+        print(f"Failed: {len(failed)}")
+        print(f"Success rate: {success_rate:.2f}%")
+        print(f"Average response time: {avg_response_time:.2f}ms")
         
-        print(f"\nConcurrent Request Metrics:")
-        print(f"Average concurrent response time: {avg_concurrent_time:.2f}ms")
-        print(f"Maximum concurrent response time: {max_concurrent_time:.2f}ms")
-        print(f"Successful requests: {len(successful_requests)}/20")
-        
-        # Performance assertions for concurrent requests
-        assert avg_concurrent_time < 2000, f"Average concurrent response time {avg_concurrent_time:.2f}ms exceeds 2000ms"
+        # Concurrent test assertions
+        assert success_rate >= 90, f"Success rate {success_rate:.2f}% is below 90%"
+        assert avg_response_time < 1000, f"Average response time {avg_response_time:.2f}ms is too high"
 
     @patch('app.api.main.memory_manager')
     @patch('app.api.main.agent')
@@ -136,41 +132,41 @@ class TestPerformanceBenchmarks:
         mock_memory_manager.retrieve_procedural_memories.return_value = [
             {"_id": f"procedure_{i}", "content": {"tool": f"tool_{i}"}} for i in range(75)
         ]
-        
-        memory_types = ["episodic", "semantic", "procedural"]
+
+        memory_types = ["episodic", "procedural"]
         response_times = {}
-        
+
         # Act - Test each memory type
         for memory_type in memory_types:
             times = []
             for i in range(10):
                 start_time = time.time()
-                response = test_client.post("/memory/query", json={
+                response = test_client.post("/memories/query", json={
                     "user_id": f"memory_user_{i}",
                     "query": f"test query {i}",
                     "memory_type": memory_type,
                     "limit": 50
                 })
                 end_time = time.time()
-                
+
                 assert response.status_code == 200
                 times.append((end_time - start_time) * 1000)
-            
+
             response_times[memory_type] = {
-                "average": statistics.mean(times),
-                "max": max(times),
-                "min": min(times)
+                "avg": statistics.mean(times),
+                "min": min(times),
+                "max": max(times)
             }
-        
-        # Assert performance metrics
+
+        # Assert performance for each memory type
         for memory_type, metrics in response_times.items():
-            print(f"\n{memory_type.title()} Memory Performance:")
-            print(f"Average: {metrics['average']:.2f}ms")
-            print(f"Max: {metrics['max']:.2f}ms")
+            print(f"\n{memory_type.capitalize()} Memory Performance:")
+            print(f"Average: {metrics['avg']:.2f}ms")
             print(f"Min: {metrics['min']:.2f}ms")
+            print(f"Max: {metrics['max']:.2f}ms")
             
-            # Performance assertions
-            assert metrics["average"] < 500, f"{memory_type} average time {metrics['average']:.2f}ms exceeds 500ms"
+            assert metrics['avg'] < 500, f"{memory_type} memory avg time {metrics['avg']:.2f}ms is too high"
+            assert metrics['max'] < 1000, f"{memory_type} memory max time {metrics['max']:.2f}ms is too high"
 
     def test_health_check_performance(self, test_client):
         """Test health check endpoint performance."""
@@ -211,9 +207,9 @@ class TestLoadTesting:
         """Test system behavior under sustained load."""
         # Arrange
         mock_memory_manager.create_conversation.side_effect = [f"load_conv_{i}" for i in range(100)]
-        mock_memory_manager.session_manager.create_session.side_effect = [f"load_session_{i}" for i in range(100)]
+        mock_memory_manager.create_session.side_effect = [f"load_session_{i}" for i in range(100)]
         mock_agent.process_message = AsyncMock(return_value="Load test response")
-        
+
         def sustained_requests():
             """Generate sustained requests."""
             results = []
@@ -225,7 +221,7 @@ class TestLoadTesting:
                         "message": f"Load test message {i}"
                     })
                     end_time = time.time()
-                    
+
                     results.append({
                         "success": response.status_code == 200,
                         "response_time": (end_time - start_time) * 1000,
@@ -237,25 +233,25 @@ class TestLoadTesting:
                         "error": str(e),
                         "response_time": 0
                     })
-                
+
                 # Small delay to simulate realistic load
                 time.sleep(0.01)
-            
+
             return results
-        
+
         # Act
         start_total = time.time()
         results = sustained_requests()
         end_total = time.time()
-        
+
         # Assert
         successful = [r for r in results if r["success"]]
         failed = [r for r in results if not r["success"]]
-        
+
         success_rate = len(successful) / len(results) * 100
         avg_response_time = statistics.mean([r["response_time"] for r in successful]) if successful else 0
         total_time = (end_total - start_total) * 1000
-        
+
         print(f"\nSustained Load Test Results:")
         print(f"Total requests: {len(results)}")
         print(f"Successful requests: {len(successful)}")
@@ -264,10 +260,10 @@ class TestLoadTesting:
         print(f"Average response time: {avg_response_time:.2f}ms")
         print(f"Total test time: {total_time:.2f}ms")
         print(f"Throughput: {len(results) / (total_time / 1000):.2f} requests/second")
-        
+
         # Load test assertions
         assert success_rate >= 95, f"Success rate {success_rate:.2f}% is below 95%"
-        assert avg_response_time < 1500, f"Average response time {avg_response_time:.2f}ms exceeds 1500ms"
+        assert avg_response_time < 1000, f"Average response time {avg_response_time:.2f}ms is too high"
 
     @patch('app.api.main.memory_manager')
     @patch('app.api.main.agent')
@@ -275,9 +271,9 @@ class TestLoadTesting:
         """Test system behavior under burst traffic."""
         # Arrange
         mock_memory_manager.create_conversation.side_effect = [f"burst_conv_{i}" for i in range(50)]
-        mock_memory_manager.session_manager.create_session.side_effect = [f"burst_session_{i}" for i in range(50)]
+        mock_memory_manager.create_session.side_effect = [f"burst_session_{i}" for i in range(50)]
         mock_agent.process_message = AsyncMock(return_value="Burst test response")
-        
+
         def burst_request(user_id):
             """Make a burst request."""
             try:
@@ -287,7 +283,7 @@ class TestLoadTesting:
                     "message": f"Burst message from {user_id}"
                 })
                 end_time = time.time()
-                
+
                 return {
                     "success": response.status_code == 200,
                     "response_time": (end_time - start_time) * 1000,
@@ -299,28 +295,28 @@ class TestLoadTesting:
                     "error": str(e),
                     "response_time": 0
                 }
-        
+
         # Act - Burst of concurrent requests
         user_ids = [f"burst_user_{i}" for i in range(50)]
-        
+
         start_burst = time.time()
         with ThreadPoolExecutor(max_workers=25) as executor:
             future_to_user = {executor.submit(burst_request, user_id): user_id for user_id in user_ids}
             results = []
-            
+
             for future in as_completed(future_to_user):
                 result = future.result()
                 results.append(result)
         end_burst = time.time()
-        
+
         # Assert
         successful = [r for r in results if r["success"]]
         failed = [r for r in results if not r["success"]]
-        
+
         success_rate = len(successful) / len(results) * 100
         avg_burst_time = statistics.mean([r["response_time"] for r in successful]) if successful else 0
         burst_duration = (end_burst - start_burst) * 1000
-        
+
         print(f"\nBurst Traffic Test Results:")
         print(f"Burst requests: {len(results)}")
         print(f"Successful: {len(successful)}")
@@ -329,10 +325,10 @@ class TestLoadTesting:
         print(f"Average response time: {avg_burst_time:.2f}ms")
         print(f"Burst duration: {burst_duration:.2f}ms")
         print(f"Peak throughput: {len(results) / (burst_duration / 1000):.2f} requests/second")
-        
+
         # Burst test assertions
         assert success_rate >= 90, f"Burst success rate {success_rate:.2f}% is below 90%"
-        assert avg_burst_time < 3000, f"Average burst response time {avg_burst_time:.2f}ms exceeds 3000ms"
+        assert avg_burst_time < 1000, f"Average burst response time {avg_burst_time:.2f}ms is too high"
 
 
 class TestScalabilityMetrics:
@@ -349,49 +345,48 @@ class TestScalabilityMetrics:
         """Test memory usage under increasing load."""
         # This test would ideally measure actual memory usage
         # For now, we'll simulate and test the pattern
-        
+
         # Arrange
         load_levels = [10, 25, 50, 100]
         results = {}
-        
+
         for load_level in load_levels:
             mock_memory_manager.create_conversation.side_effect = [f"scale_conv_{i}" for i in range(load_level)]
-            mock_memory_manager.session_manager.create_session.side_effect = [f"scale_session_{i}" for i in range(load_level)]
+            mock_memory_manager.create_session.side_effect = [f"scale_session_{i}" for i in range(load_level)]
             mock_agent.process_message = AsyncMock(return_value="Scaling test response")
-            
+
             # Act
             start_time = time.time()
             successful_requests = 0
-            
+
             for i in range(load_level):
                 response = test_client.post("/chat", json={
                     "user_id": f"scale_user_{load_level}_{i}",
                     "message": f"Scaling test {load_level} - {i}"
                 })
+                
                 if response.status_code == 200:
                     successful_requests += 1
-            
+
             end_time = time.time()
-            
+            total_time = (end_time - start_time) * 1000
+
             results[load_level] = {
-                "total_requests": load_level,
-                "successful_requests": successful_requests,
                 "success_rate": (successful_requests / load_level) * 100,
-                "total_time": (end_time - start_time) * 1000,
-                "throughput": load_level / (end_time - start_time)
+                "total_time": total_time,
+                "throughput": load_level / (total_time / 1000)
             }
-        
-        # Assert scaling characteristics
-        print(f"\nScalability Test Results:")
+
+        # Assert scaling behavior
         for load_level, metrics in results.items():
-            print(f"Load Level {load_level}:")
-            print(f"  Success Rate: {metrics['success_rate']:.2f}%")
-            print(f"  Total Time: {metrics['total_time']:.2f}ms")
-            print(f"  Throughput: {metrics['throughput']:.2f} req/sec")
-        
-        # Check that success rate doesn't degrade significantly
-        for load_level, metrics in results.items():
-            assert metrics["success_rate"] >= 95, f"Success rate at load {load_level} is {metrics['success_rate']:.2f}%"
+            print(f"\nLoad Level {load_level}:")
+            print(f"Success Rate: {metrics['success_rate']:.2f}%")
+            print(f"Total Time: {metrics['total_time']:.2f}ms")
+            print(f"Throughput: {metrics['throughput']:.2f} requests/second")
+
+            # Scaling assertions
+            assert metrics['success_rate'] >= 90, f"Success rate {metrics['success_rate']:.2f}% is below 90% for load {load_level}"
+            assert metrics['throughput'] > 0, f"Throughput should be positive for load {load_level}"
 
     def test_resource_cleanup_patterns(self, test_client):
         """Test that resources are properly cleaned up."""

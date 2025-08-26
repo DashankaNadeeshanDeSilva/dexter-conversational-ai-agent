@@ -25,7 +25,7 @@ class ChatResponse(BaseModel):
     
     conversation_id: str = Field(..., description="Conversation ID")
     session_id: str = Field(..., description="Session ID")
-    message: ChatMessage = Field(..., description="Assistant's response message")
+    message: Dict[str, Any] = Field(..., description="Assistant's response message")
 
 class ConversationListResponse(BaseModel):
     """Conversation list response model."""

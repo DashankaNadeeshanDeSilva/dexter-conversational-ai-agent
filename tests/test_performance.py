@@ -8,7 +8,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from fastapi.testclient import TestClient
 import statistics
 
-from app.api.main import app
+# Import removed to prevent MongoDB connection during test collection
 from app.agent.agent import ReActAgent
 from app.memory.memory_manager import MemoryManager
 
@@ -17,9 +17,9 @@ class TestPerformanceBenchmarks:
     """Performance benchmark tests."""
     
     @pytest.fixture
-    def test_client(self):
-        """Create test client."""
-        return TestClient(app)
+    def test_client(self, test_app):
+        """Create test client using the test_app fixture."""
+        return TestClient(test_app)
 
     @patch('app.api.main.memory_manager')
     @patch('app.api.main.agent')
@@ -201,9 +201,9 @@ class TestLoadTesting:
     """Load testing scenarios."""
     
     @pytest.fixture
-    def test_client(self):
-        """Create test client."""
-        return TestClient(app)
+    def test_client(self, test_app):
+        """Create test client using the test_app fixture."""
+        return TestClient(test_app)
 
     @patch('app.api.main.memory_manager')
     @patch('app.api.main.agent')
@@ -339,9 +339,9 @@ class TestScalabilityMetrics:
     """Test scalability and resource usage metrics."""
     
     @pytest.fixture
-    def test_client(self):
-        """Create test client."""
-        return TestClient(app)
+    def test_client(self, test_app):
+        """Create test client using the test_app fixture."""
+        return TestClient(test_app)
 
     @patch('app.api.main.memory_manager')
     @patch('app.api.main.agent')

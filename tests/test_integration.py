@@ -7,7 +7,7 @@ from typing import Dict, Any, List
 
 from app.agent.agent import ReActAgent, AgentState
 from app.memory.memory_manager import MemoryManager
-from app.api.main import app
+# Import removed to prevent MongoDB connection during test collection
 from app.tools.web_search_tool import WebSearchTool
 from app.tools.product_search_tool import ProductSearchTool
 from app.tools.appointment_tool import AppointmentTool

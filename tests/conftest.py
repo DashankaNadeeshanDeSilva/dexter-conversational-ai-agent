@@ -17,9 +17,9 @@ os.environ["OPENAI_API_KEY"] = "test_openai_key"
 os.environ["DEBUG"] = "true"
 os.environ["ENABLE_METRICS"] = "false"
 
+# Import only the classes we need for testing, NOT the actual app
 from app.memory.memory_manager import MemoryManager
 from app.agent.agent import ReActAgent, AgentState
-from app.api.main import app
 from app.memory.mongodb_client import MongoDBClient
 from app.db_clients.pinecone_client import PineconeClient
 from app.memory.short_term_memory import ShortTermMemory
@@ -126,20 +126,20 @@ def mock_semantic_extractor():
 
 
 @pytest.fixture
-def mock_memory_manager():
+def mock_memory_manager(mock_mongodb_client, mock_pinecone_client, mock_short_term_memory, mock_semantic_extractor, mock_episodic_memory, mock_procedural_memory):
     """Create a mock memory manager."""
     mock = MagicMock(spec=MemoryManager)
     
     # Mock components
-    mock.mongodb_client = mock_mongodb_client()
-    mock.pinecone_client = mock_pinecone_client()
+    mock.mongodb_client = mock_mongodb_client
+    mock.pinecone_client = mock_pinecone_client
     mock.short_term_memories = {}
-    mock.semantic_extractor = mock_semantic_extractor()
-    mock.episodic_memory = mock_episodic_memory()
-    mock.procedural_memory = mock_procedural_memory()
+    mock.semantic_extractor = mock_semantic_extractor
+    mock.episodic_memory = mock_episodic_memory
+    mock.procedural_memory = mock_procedural_memory
     
     # Mock methods
-    mock.get_short_term_memory = MagicMock(return_value=mock_short_term_memory())
+    mock.get_short_term_memory = MagicMock(return_value=mock_short_term_memory)
     mock.add_message_to_short_term_memory = MagicMock()
     mock.get_short_term_memory_messages = MagicMock(return_value=[])
     mock.clear_short_term_memory = MagicMock()
@@ -204,15 +204,31 @@ def mock_react_agent():
 
 @pytest.fixture
 def test_app():
-    """Create a test FastAPI app instance."""
-    return app
+    """Create a test FastAPI app instance with mocked dependencies."""
+    # Import here to avoid MongoDB connection during test setup
+    from app.api.main import app
+    
+    # Mock the memory manager and agent in the app
+    with patch('app.api.main.memory_manager') as mock_mm, \
+         patch('app.api.main.agent') as mock_agent:
+        
+        # Set up mock memory manager
+        mock_mm.create_conversation = MagicMock(return_value="test_conv_id")
+        mock_mm.create_session = MagicMock(return_value="test_session_id")
+        mock_mm.add_message_to_short_term_memory = MagicMock()
+        mock_mm.store_episodic_memory = MagicMock(return_value="test_episodic_id")
+        
+        # Set up mock agent
+        mock_agent.process_message = AsyncMock(return_value="Test response")
+        
+        yield app
 
 
 @pytest.fixture
-def test_client():
+def test_client(test_app):
     """Create a test client for the FastAPI app."""
     from fastapi.testclient import TestClient
-    return TestClient(app)
+    return TestClient(test_app)
 
 
 @pytest.fixture

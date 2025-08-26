@@ -7,8 +7,10 @@ from fastapi import status
 import json
 from datetime import datetime
 
-from app.api.main import app
+# Import removed to prevent MongoDB connection during test collection
+from fastapi import HTTPException
 from app.api.models import ChatRequest, ChatResponse, ConversationListResponse, MemoryQueryRequest, MemoryQueryResponse, HealthResponse
+from langchain_core.messages import HumanMessage, AIMessage
 
 
 class TestAPIEndpoints:

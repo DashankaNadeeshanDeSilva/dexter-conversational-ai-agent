@@ -1,293 +1,148 @@
-Title: Dexter – A Production-Ready Conversational AI Agent with Human-Like Memory
+Title: Dexter: A Memory-Centric Conversational AI Agent for Customer Support
 
 Authors: Dashanka De Silva et al.
 
-Version: 1.0
+Version: 1.1 (Product-Oriented Research Paper Draft)
 
-Date: 2025-09-10
+Date: 2025-09-11
 
 Abstract
 
-Dexter is a production-ready conversational AI agent backend designed for customer support assistance. It combines a ReAct-style reasoning engine with a multi-store memory architecture—short-term, semantic, episodic, and procedural—to deliver contextual, adaptive, and personalized interactions across sessions. The system integrates tool-augmented actions (product search, appointment management, semantic knowledge retrieval, web search), provides a robust FastAPI surface, and includes monitoring, security, testing, and deployment assets. This paper presents Dexter’s architecture, design decisions, API, memory systems, tools, data flow, performance, observability, and security posture, with references to implementation artifacts in the repository.
+We present Dexter, a production-ready conversational AI agent tailored for customer support. Dexter integrates a ReAct-style reasoning engine with a multi-store memory system—short-term, semantic, episodic, and procedural—to achieve continuity, personalization, and robust tool use. Unlike stateless chatbots, Dexter maintains context across sessions, extracts durable facts, and learns effective strategies from successful interactions. It exposes a FastAPI interface, supports domain tools (product search, appointment management, semantic knowledge retrieval, web search), and ships with monitoring, security, and comprehensive tests. We detail the system design, implementation, and evaluation framework, emphasizing product goals (resolution rate, CSAT proxy, latency, cost) and pragmatic engineering trade-offs. This is a living paper accompanying an evolving codebase.
 
-Keywords: ReAct, conversational AI, memory systems, RAG, Pinecone, MongoDB, FastAPI, LangChain, LangGraph
+Keywords: conversational AI, memory systems, ReAct, RAG, customer support, Pinecone, MongoDB, FastAPI, LangChain, LangGraph
 
-1. Introduction
+1 Introduction
 
-Customer support automation requires both strong reasoning and long-lived memory. Stateless chatbots struggle with continuity, personalization, and complex workflows. Dexter addresses these gaps by integrating:
-- A ReAct agent that plans, reasons, and invokes tools
-- A unified memory manager orchestrating four memory types
-- A tool ecosystem for domain actions and retrieval
-- A production-grade API, security, monitoring, tests, and deployment scaffolding
+Customer support assistants must understand evolving context, remember preferences, and reliably execute tasks. Prior approaches often rely on stateless prompting or narrow flows, producing brittle behavior and impersonal experiences. Dexter addresses these limitations with: (i) a ReAct agent that plans and acts via tools; (ii) a unified memory manager spanning working, event, fact, and strategy memories; and (iii) a production surface with APIs, observability, and tests. Our goal is practical: elevate first-contact resolution and user satisfaction while controlling latency and cost.
 
-The result is an agent capable of human-like continuity—remembering preferences, recalling prior interactions, and reusing successful strategies—while safely integrating with operational data sources and company knowledge.
+Contributions:
+- A modular, memory-centric architecture that operationalizes human-like memory types in production.
+- A ReAct+LangGraph agent that integrates memory retrieval and tool execution.
+- A product-oriented evaluation harness (tests, metrics scaffolding) for reliability and performance.
 
-2. System Overview
+2 Related Work
 
-Dexter is a Python 3.11+ backend service exposing REST endpoints via FastAPI. Core compute is powered by OpenAI models via LangChain/LangGraph. Persistent state is split across MongoDB (episodic/procedural, conversations), Pinecone (semantic vectors and knowledge), and an in-process short-term memory for working context. Monitoring integrates Prometheus/Grafana. Deployment targets local Docker or cloud (AWS ECS) with IaC artifacts.
+ReAct combines step-by-step reasoning with tool calls to improve decision making and factuality [1]. Retrieval-Augmented Generation (RAG) enriches responses with external knowledge retrieved by similarity search [2]. Foundational cognitive theories describe complementary memory systems: episodic memory for events [3], working memory for transient context [4], and procedural memory for learned skills and strategies [5]. Recent work on memory-augmented language models further demonstrates the value of non-parametric memories to improve recall and adaptability [6]. Dexter synthesizes these strands into a cohesive, deployable system for customer support, with explicit multi-memory orchestration and production operability (APIs, monitoring, tests, deployment assets).
 
-Repository anchors:
-- Application: app/
-- API: app/api
-- Agent: app/agent
-- Memory system: app/memory
-- Tools: app/tools
-- Configuration: app/config.py
-- Docs: docs/
-- Tests: tests/
+3 System Overview
 
-3. Architecture
+Dexter is a Python 3.11+ service built on FastAPI. The agent uses OpenAI models via LangChain and LangGraph. Persistence spans MongoDB (conversations, episodic/procedural) and Pinecone (semantic facts and knowledge). Short-term memory is in-process per session. Prometheus/Grafana provide observability. Docker-based workflows and AWS artifacts support deployment.
 
-3.1 High-Level Components
+Repository anchors: app/ (agent, api, memory, tools, utils), docs/, tests/, deployment/, monitoring/.
 
-- ReAct Agent (app/agent/agent.py): Orchestrates reasoning, tool selection, and memory usage using LangGraph state machines. Binds tools and injects memory context into prompts.
-- Memory Manager (app/memory/memory_manager.py): Facade over all memory types and storage clients. Provides CRUD for conversations and long-term memories, and utilities for semantic extraction.
-- Tools (app/tools): Domain actions and retrieval capabilities: product search, appointment management, semantic knowledge retrieval, and web search.
-- API (app/api/main.py, app/api/models.py): FastAPI endpoints for chat, conversations, and memory queries with Pydantic models for validation.
-- Storage Clients: MongoDB client (episodic/procedural, conversations), Pinecone client (semantic memories and knowledge base).
-- Configuration (app/config.py): Environment-driven configuration (OpenAI, Pinecone, MongoDB, metrics, system prompts).
+Figure 1: System Architecture Overview. The agent (FastAPI service) integrates a ReAct+LangGraph controller with multi-store memory (short-term, episodic/procedural via MongoDB, semantic via Pinecone) and a tool ecosystem. See: ![](docs/System_Architecture.png)
 
-3.2 Reasoning and Control Flow
+4 Methods: Architecture and Algorithms
 
-The agent uses a LangGraph StateGraph with nodes for think and use_tool. The decision function checks the most recent LLM output: if tool_calls are present, the agent transitions to use_tool; otherwise it ends with a response. Memory is consulted before generation to enrich context.
+4.1 Memory-Oriented Architecture
 
-3.3 Memory-Oriented Design
+Short-term (working) memory serves as a session-scoped buffer that maintains immediate discourse context, consistent with the role of working memory in human cognition [4]. Semantic memory captures durable, context-independent facts extracted from interaction windows and stores them as embeddings in Pinecone to enable similarity-based retrieval [2]. Episodic memory records time-ordered conversation events and tool outcomes in MongoDB, mirroring Tulving’s conception of episodic recollection [3]. Procedural memory retains successful strategies and tool-usage patterns—an operational analogue of skill learning [5]—to guide future decisions.
 
-- Short-term (Working) Memory: Session-scoped conversational context, stored in-memory via ShortTermMemory. This supports immediate discourse continuity and semantic extraction windows.
-- Semantic Memory: Factual knowledge extracted from conversations and stored as embeddings in Pinecone. Retrieval provides relevant facts to the prompt.
-- Episodic Memory: Chronological event logging of conversation messages and significant interactions in MongoDB. Useful for audits, longitudinal analysis, and recall of specific events.
-- Procedural Memory: Patterns of successful strategies and tool usage stored in MongoDB, informing future action selection and parameterization.
+4.2 Agent Graph (ReAct with LangGraph)
 
-4. Memory Systems
+The agent maintains an AgentState (messages, ids, tools). Think composes a system prompt with tool descriptions and memory context; the model may emit tool_calls following the ReAct paradigm [1]. A conditional edge routes to use_tool when tool_calls exist; otherwise the response is emitted. ToolNode executes tools and returns ToolMessage entries; the loop continues until a final response is produced.
 
-4.1 Short-Term Memory
+4.3 Memory Algorithms
 
-Purpose: Maintain working context (messages) for a session. The agent writes user and assistant messages into short-term memory; periodic extraction uses recent windows to derive semantic facts.
+For each user turn, the system assembles context by retrieving relevant semantic facts from Pinecone and, where appropriate, consulting episodic and procedural signals exposed via utility functions. Periodically—every N messages—the SemanticExtractor processes a rolling window of recent messages to surface candidate facts, enriching each with entities and confidence estimates before persisting them to Pinecone with descriptive metadata. Following successful responses, whether tool-assisted or not, the agent materializes a procedural pattern that records the pattern_type, succinct rationale, and query context, enabling future decisions to benefit from prior successes.
 
-Key behaviors:
-- get_short_term_memory(session_id) lazily initializes a ShortTermMemory per session
-- add_user_message/add_ai_message append to the rolling context
-- clear_short_term_memory(session_id) resets state (exposed via /session/{session_id}/reset)
+5 Implementation
 
-4.2 Semantic Memory (Pinecone)
+5.1 API and Contracts
 
-Purpose: Store durable, context-free facts extracted from interaction windows.
+FastAPI endpoints: /chat (main interaction), /conversations (create/list/get), /memories/query (semantic/episodic/procedural), /session/{session_id}/reset (short-term reset), /health, and optionally /metrics. Pydantic models validate inputs/outputs and timestamp messages.
 
-Pipeline:
-1) Extract facts via SemanticExtractor (LLM-guided)
-2) Store facts with metadata (entities, confidence, context requirements) using PineconeClient
-3) Retrieve similar facts for queries to enrich prompting and responses
+5.2 Tools
 
-APIs:
-- store_semantic_memory(user_id, text, metadata)
-- retrieve_semantic_memories(user_id, query, k, filter_metadata)
-- store_extracted_semantic_facts(user_id, facts, conversation_metadata)
+The Product Search tool interprets natural-language queries using an LLM to extract structured filters and gracefully falls back to regex heuristics when needed; it compiles MongoDB queries and returns clearly formatted product summaries. The Appointment Management tool enforces operation-specific requirements, checks availability, performs CRUD actions, and communicates outcomes in user-friendly language. The Semantic Retrieval tool queries Pinecone to surface relevant knowledge, returning grounded content with its source attribution and similarity scores. Finally, the Web Search tool complements internal knowledge by providing an external retrieval path for open-domain information when appropriate.
 
-4.3 Episodic Memory (MongoDB)
+5.3 Storage
 
-Purpose: Capture time-ordered events (messages, tool outcomes) per conversation.
+MongoDB stores conversations, episodic events, and procedural patterns with metadata. Pinecone stores semantic facts and knowledge documents with per-user scopes and rich metadata to enable filtered retrieval.
 
-APIs:
-- store_event(user_id, content, metadata)
-- store_conversation_message(user_id, conversation_id, message)
-- retrieve_events(user_id, filter_query, limit)
+5.4 Configuration and Prompts
 
-Each message added to a conversation is also mirrored to episodic memory for complete lineage.
+Configuration is environment-driven (OpenAI, Pinecone, MongoDB, metrics, prompt path). The system prompt lives in app/agent/system_prompts and is augmented at runtime with current tool descriptions and retrieved memory context.
 
-4.4 Procedural Memory (MongoDB)
+6 Evaluation (Product-Oriented)
 
-Purpose: Learn and store successful patterns and tool usage to inform future actions.
+Objectives and proxies:
+- Resolution rate: fraction of sessions where user intent is resolved (proxied by tests and tool success paths).
+- CSAT proxy: heuristic scoring of responses (readability, task completion signals).
+- Latency: p95 endpoint latency under nominal load (middleware metrics, performance tests).
+- Cost: token usage and tool invocation counts (metric scaffolding provided).
 
-APIs:
-- store_pattern(user_id, content, metadata)
-- store_successful_pattern(user_id, pattern_type, pattern_description, context, metadata)
-- get_tool_usage_patterns(user_id, tool_name?, query_context?, success_only)
-- retrieve_patterns(user_id, filter_query, limit)
+Methodology:
+- Unit and integration tests (tests/) cover agent flow, tools, memory CRUD, and API contracts.
+- Performance tests evaluate latency trends and concurrency behavior.
+- Observability: Prometheus counters/histograms for requests and latency; extensible business metrics suggested (e.g., CHAT_TOKENS_USED).
 
-Usage: After successful responses or tool calls, patterns are saved with context and tags (e.g., tool_category). Failures can also be recorded for error-aware learning (agent logic contains scaffolding).
+Reporting: The repository includes coverage tooling and dashboards; teams can plug CI to gate on reliability and coverage thresholds.
 
-5. Agent Design (ReAct + LangGraph)
+7 Case Studies and Usage Scenarios
 
-5.1 State and Prompting
+- Product discovery: Price- and feature-aware search that recalls prior preferences from semantic memory.
+- Appointment workflows: End-to-end booking with availability checks and rescheduling; procedural memory accumulates successful patterns.
+- Knowledge questions: RAG-like responses grounded in internal knowledge, with web search as fallback when allowed.
 
-Agent state (AgentState) includes messages, user_id, session_id, conversation_id, tools, and tool_names. The system prompt is loaded from app/agent/system_prompts/system_prompt.md and augmented at runtime with tool descriptions and retrieved memory context.
+8 Limitations
 
-5.2 Tool Binding and Decisioning
+- Session consolidation is a placeholder; long-horizon summarization and spaced rehearsal are deferred.
+- Tool outcome learning on failures is scaffolded but can be extended to adaptive retries and guarded parameter suggestions.
+- Access control and multi-tenant isolation can be strengthened via middleware and DB scoping patterns.
 
-The LLM is bound with available tools using tool_choice="auto". After the think step produces an AIMessage, the graph routes either to use_tool (if tool_calls present) or ends with RESPONSE. ToolNode integrates tool execution results back into the state as ToolMessage entries, which are then used for follow-up reasoning.
+9 Ethical and Privacy Considerations
 
-5.3 Memory Interaction
+We recommend explicit consent, data minimization, and retention policies. Provide export/deletion capabilities and auditability of tool use. Encrypt data at rest and in transit; segregate user data and enforce strict scoping in retrieval.
 
-- Pre-generation: Retrieve semantic/episodic/procedural context based on the latest human message via AgentMemoryUtils and MemoryManager
-- Post-generation: Update episodic memory with both user and assistant messages; periodically extract and store semantic facts; store procedural patterns when a response succeeds; optionally log tool usage outcomes
+10 Deployment and Operations
 
-6. Tool Ecosystem
+Local development via docker-compose and Makefile; production via Docker and AWS assets. Uvicorn serves the FastAPI app; /metrics exposes Prometheus data. Scale horizontally; consider DB sharding and caching (e.g., Redis) for hot data and short-term memory.
 
-6.1 Product Search Tool (app/tools/product_search_tool.py)
+11 Results Summary and Practical Impact
 
-Function: Natural-language product queries with intelligent filter extraction.
+In practice, Dexter’s memory-centric approach is designed to improve continuity (reduced repetition), personalization (preference recall), and task success (tool guidance via procedural memory). The engineering assets (APIs, tests, monitoring) support safe iteration and measurable gains. Teams can track resolution rate, latency, and cost to tune prompts, tools, and memory thresholds.
 
-Highlights:
-- LLM-guided filter extraction to JSON (category, price_range, availability, brand, features) with robust fallback (regex and simple heuristics)
-- MongoDB filter construction and query to a product collection via DatabaseClient
-- User-friendly result formatting with price, availability, and specifications snippets
+12 Future Work
 
-6.2 Appointment Management Tool (app/tools/appointment_tool.py)
+- Implement session-level knowledge consolidation and periodic rehearsal.
+- Expand procedural learning for failure-aware strategies and parameter recommendations.
+- Add fine-grained authN/Z and tenancy; introduce privacy filters into retrieval.
+- Explore streaming responses and parallel tool execution when safe.
 
-Function: Manage bookings end-to-end (book, cancel, reschedule, view, search_availability).
+13 Conclusion
 
-Highlights:
-- Centralized validation by operation (required fields vary by action)
-- Availability checks and CRUD via DatabaseClient
-- Clear, human-readable confirmations and lists of appointments/availability
+Dexter operationalizes multi-memory conversational AI in a production setting. By unifying ReAct planning, tool use, and memory orchestration under a clean API and observability stack, it provides a practical foundation for customer support automation. The design choices emphasize measurable product outcomes alongside research-informed memory structures.
 
-6.3 Semantic Knowledge Retrieval Tool (app/tools/semantic_retrieval_tool.py)
+Acknowledgments
 
-Function: Retrieve company knowledge via Pinecone similarity search (RAG-like).
-
-Highlights:
-- Query top_k relevant documents and format results with source and scores
-- Optional similarity thresholding (scaffolding present)
-
-6.4 Web Search Tool
-
-Function: External web search capability (implementation present in app/tools/web_search_tool.py). Used when internal knowledge is insufficient.
-
-7. API Surface
-
-Implemented with FastAPI (app/api/main.py) and Pydantic models (app/api/models.py). Key endpoints:
-
-- GET /health → HealthResponse
-- POST /chat → ChatResponse
-  - Accepts user_id, message, optional conversation_id and session_id
-  - Creates conversation/session if not supplied
-  - Returns assistant message plus resolved ids
-- POST /conversations/create_new → create conversation for a user
-- GET /conversations/{user_id} → list conversations (paginated by limit)
-- GET /conversations/{user_id}/{conversation_id} → retrieve a conversation
-- POST /memories/query → MemoryQueryResponse (semantic | episodic | procedural)
-- POST /session/{session_id}/reset → clear short-term memory
-- Optional: /metrics (Prometheus) when ENABLE_METRICS is true
-
-Request/Response Validation: app/api/models.py defines ChatRequest, ChatResponse, ConversationListResponse, MemoryQueryRequest, MemoryQueryResponse, HealthResponse.
-
-8. Data Flow
-
-8.1 Chat Processing Pipeline
-
-1) Receive request → validate models
-2) Ensure conversation_id and session_id exist via MemoryManager
-3) Write user message to short-term and episodic memory
-4) Build AgentState and run LangGraph workflow
-5) Optionally execute tools (ToolNode)
-6) Generate assistant response
-7) Write assistant message to episodic memory
-8) Periodically extract semantic facts and store in Pinecone
-9) Store successful procedural patterns
-10) Return response
-
-8.2 Memory Query
-
-- Semantic: vector similarity via Pinecone; return Document content + metadata + score
-- Episodic/Procedural: MongoDB retrieval with optional filters and limits
-
-9. Configuration and Secrets
-
-Configuration is centralized in app/config.py using pydantic-settings and dotenv. Key variables:
-- MongoDB: MONGODB_URI, MONGODB_DATABASE, collection names
-- Pinecone: PINECONE_API_KEY, PINECONE_*_INDEX
-- OpenAI: OPENAI_API_KEY, OPENAI_MODEL, EMBEDDING_MODEL
-- LangChain: LANGCHAIN_TRACING, LANGCHAIN_PROJECT, LANGCHAIN_API_KEY
-- Monitoring: ENABLE_METRICS
-- System Prompt Path: SYSTEM_PROMPT_PATH
-
-10. Monitoring and Observability
-
-When ENABLE_METRICS is enabled, the app mounts /metrics (Prometheus). Built-in HTTP middleware records request counts and latencies; business counters (e.g., CHAT_TOKENS_USED) are scaffolded for extension. The repository includes Grafana dashboards under monitoring/grafana and Prometheus configuration in monitoring/prometheus.yml.
-
-11. Security Considerations
-
-- Input validation via Pydantic models
-- Logging of errors with minimal sensitive data
-- Token-based authentication and rate limiting are documented in README and can be enforced at the API gateway/reverse proxy (implementation hooks can be added to FastAPI dependencies)
-- Data privacy: Conversations and memories are user-scoped; retrieval APIs accept user_id and always filter by it
-
-12. Testing Strategy
-
-The tests/ suite covers unit, API, integration, performance, and database behaviors. Fixtures mock external dependencies (OpenAI, Pinecone, MongoDB) to ensure deterministic runs. Coverage targets are ≥80% overall with higher thresholds on critical paths. The test runner supports parallelization and multiple report formats.
-
-Representative categories:
-- test_agent*.py: Agent initialization, reasoning, and tool selection
-- test_memory_*.py: Memory manager and individual memory components
-- test_tools.py: Tool behaviors and validation
-- test_api.py: Endpoint contracts and error handling
-- test_performance.py: Latency and throughput under load
-
-13. Deployment
-
-- Local: docker-compose.yml for dev; Makefile targets for build/run
-- Production: Dockerfile and AWS assets (deployment/aws/cloudformation.yml); environment-driven configuration for portability
-- Runtime: uvicorn app.main:app or via container entrypoint; optional metrics exposure
-
-14. Performance and Scalability
-
-Optimizations:
-- Short-term memory kept in-process for low-latency iteration
-- MongoDB and Pinecone clients reused; filtering and indexing recommended for production data volumes
-- LangGraph enables multi-turn tool reasoning with minimal overhead
-- Batch embeddings and adjustable k for retrieval trade-offs
-
-Scalability:
-- Stateless API layer permits horizontal scaling and load balancing
-- Database sharding/partitioning by user or tenant is feasible
-- Caching layers (Redis) can be introduced for short-term memory or hot data
-
-15. Limitations and Future Work
-
-- Session Manager: The docs outline a richer session manager (engagement metrics, preferences) that is partially deferred; hooks exist to add it cleanly.
-- Consolidation: MemoryManager.consolidate_session_knowledge is a placeholder; future work can implement session-level consolidation and spaced rehearsal.
-- Tool Outcome Learning: Failure case learning exists in agent scaffolding; can be expanded to adaptive retries and guarded tool param suggestions.
-- Access Control: Fine-grained authz and multi-tenant isolation layers can be added depending on environment.
-
-16. Ethical Use and Privacy
-
-Dexter is designed to handle user data responsibly. Operators should:
-- Obtain user consent for data retention and personalization
-- Apply data minimization, retention policies, and encryption at rest/in transit
-- Provide user-accessible memory export and deletion
-- Audit tool usage and ensure transparency
-
-17. Reproducibility and Setup
-
-Prerequisites:
-- Python 3.11+, MongoDB, Pinecone, OpenAI API key
-
-Steps (abridged):
-1) pip install -r requirements.txt
-2) Configure .env (OpenAI, MongoDB, Pinecone)
-3) docker-compose up -d (recommended) or run uvicorn
-4) Call /health, then /chat
-
-18. Conclusion
-
-Dexter demonstrates how principled memory design dramatically improves conversational agents: continuity, personalization, and effectiveness. The modular architecture, clear APIs, and comprehensive tooling make it a practical foundation for real-world customer support and beyond. With session consolidation, richer procedural learning, and expanded governance, Dexter can evolve into a full-fledged cognitive assistant platform.
+Built with FastAPI, LangChain/LangGraph, OpenAI, MongoDB, and Pinecone. We thank the open-source community and contributors.
 
 References
 
-- Repository documentation: docs/ARCHITECTURE.md, docs/API.md, docs/DEVELOPMENT.md, docs/DEPLOYMENT.md, docs/USAGE_EXAMPLES.md
+- [1] Yao et al., "ReAct: Synergizing Reasoning and Acting in Language Models," 2022.
+- [2] Lewis et al., "Retrieval-Augmented Generation for Knowledge-Intensive NLP," NeurIPS, 2020.
+- [3] Tulving, "Episodic and Semantic Memory," Organization of Memory, 1972.
+- [4] Baddeley, "Working Memory," Science, 1992.
+- [5] Anderson, "Acquisition of Cognitive Skill," Psychological Review, 1982.
+- [6] Borgeaud et al., "Improving language models by retrieving from trillions of tokens," ICML, 2022.
+
+Project documentation and assets:
+- docs/ARCHITECTURE.md, docs/API.md, docs/DEVELOPMENT.md, docs/DEPLOYMENT.md, docs/USAGE_EXAMPLES.md
 - System diagrams: docs/System_Architecture_overview.jpeg, docs/Detailed_system.png, docs/System_Architecture.png
 - Core modules: app/agent/agent.py, app/memory/memory_manager.py, app/tools/*.py, app/api/main.py, app/api/models.py, app/config.py
 
 Appendix A: API Summary
 
-- GET /health → service status
+- GET /health → status
 - POST /chat → {conversation_id, session_id, message}
 - POST /conversations/create_new → {user_id, conversation_id}
-- GET /conversations/{user_id} → list conversations
-- GET /conversations/{user_id}/{conversation_id} → conversation detail
-- POST /memories/query → semantic | episodic | procedural results
-- POST /session/{session_id}/reset → clears short-term memory
-- GET /metrics (optional) → Prometheus exposition
+- GET /conversations/{user_id}
+- GET /conversations/{user_id}/{conversation_id}
+- POST /memories/query → semantic | episodic | procedural
+- POST /session/{session_id}/reset
+- GET /metrics (optional)
 
 Appendix B: Configuration Keys (selected)
 

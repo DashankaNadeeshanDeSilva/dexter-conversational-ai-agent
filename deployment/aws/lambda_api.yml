@@ -83,7 +83,7 @@ Resources:
       PackageType: Image
       Code:
         ImageUri: !Ref LambdaImageUri
-      MemorySize: 2048
+      MemorySize: 3008
       Timeout: 29  # Stay within API Gateway HTTP API 30s limit
       TracingConfig:
         Mode: PassThrough
@@ -98,6 +98,21 @@ Resources:
           PINECONE_KNOWLEDGE_INDEX: !Ref PineconeKnowledgeIndex
           LANGCHAIN_TRACING: !Ref LangchainTracing
           LANGCHAIN_PROJECT: !Ref LangchainProject
+
+  # Publish a new immutable version on each image change
+  DexterVersion:
+    Type: AWS::Lambda::Version
+    Properties:
+      FunctionName: !Ref DexterFunction
+      Description: !Sub "Version for image ${LambdaImageUri}"
+
+  # Alias for production traffic
+  DexterAlias:
+    Type: AWS::Lambda::Alias
+    Properties:
+      FunctionName: !Ref DexterFunction
+      FunctionVersion: !GetAtt DexterVersion.Version
+      Name: prod
 
   # API Gateway
   HttpApi:
@@ -125,7 +140,7 @@ Resources:
     Properties:
       ApiId: !Ref HttpApi
       IntegrationType: AWS_PROXY
-      IntegrationUri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DexterFunction.Arn}/invocations
+      IntegrationUri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DexterFunction.Arn}:${DexterAlias}/invocations
       PayloadFormatVersion: '2.0'
       TimeoutInMillis: 29000
 
@@ -156,5 +171,5 @@ Outputs:
     Value: !Sub https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com
   LambdaArn:
     Description: Lambda function ARN
-    Value: !GetAtt DexterFunction.Arn
+    Value: !Sub ${DexterFunction.Arn}:${DexterAlias}
 

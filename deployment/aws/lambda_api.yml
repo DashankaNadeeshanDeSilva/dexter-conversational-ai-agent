@@ -1,0 +1,160 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Lambda (container image) + API Gateway HTTP API for Dexter AI Agent
+
+Parameters:
+  Environment:
+    Type: String
+    Default: production
+    AllowedValues: [development, staging, production]
+    Description: Deployment environment name
+
+  # lets CI/CD inject the ECR image URI each deployment
+  LambdaImageUri:
+    Type: String
+    Description: ECR image URI for the Lambda function (e.g., 123456789012.dkr.ecr.us-east-1.amazonaws.com/dexter:sha)
+
+  # Phase 1: direct env vars (simple). In Phase 2, switch to Secrets Manager.
+  MongoDbUri:
+    Type: String
+    NoEcho: true
+    Default: ''
+    Description: MongoDB connection string
+
+  OpenAiApiKey:
+    Type: String
+    NoEcho: true
+    Default: ''
+    Description: OpenAI API key
+
+  PineconeApiKey:
+    Type: String
+    NoEcho: true
+    Default: ''
+    Description: Pinecone API key
+
+  PineconeEnvironment:
+    Type: String
+    Default: us-east-1
+    Description: Pinecone serverless region
+
+  PineconeMemoryIndex:
+    Type: String
+    Default: dexter-v1-memory
+    Description: Pinecone memory index name
+
+  PineconeKnowledgeIndex:
+    Type: String
+    Default: dexter-v1-knowledge-base
+    Description: Pinecone knowledge index name
+
+  LangchainTracing:
+    Type: String
+    AllowedValues: ['true', 'false']
+    Default: 'false'
+    Description: Enable LangChain tracing
+
+  LangchainProject:
+    Type: String
+    Default: ai-agent-with-memory
+    Description: LangChain project name
+
+# IAM roles and policies
+Resources:
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies: []  # Phase 2: add Secrets Manager/SSM read if needed
+
+# Lambda function
+  DexterFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub dexter-${Environment}
+      Role: !GetAtt LambdaExecutionRole.Arn
+      PackageType: Image
+      Code:
+        ImageUri: !Ref LambdaImageUri
+      MemorySize: 2048
+      Timeout: 29  # Stay within API Gateway HTTP API 30s limit
+      TracingConfig:
+        Mode: PassThrough
+      Environment:
+        Variables:
+          ENVIRONMENT: !Ref Environment
+          MONGODB_URI: !Ref MongoDbUri
+          OPENAI_API_KEY: !Ref OpenAiApiKey
+          PINECONE_API_KEY: !Ref PineconeApiKey
+          PINECONE_ENVIRONMENT: !Ref PineconeEnvironment
+          PINECONE_MEMORY_INDEX: !Ref PineconeMemoryIndex
+          PINECONE_KNOWLEDGE_INDEX: !Ref PineconeKnowledgeIndex
+          LANGCHAIN_TRACING: !Ref LangchainTracing
+          LANGCHAIN_PROJECT: !Ref LangchainProject
+
+  # API Gateway
+  HttpApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: !Sub dexter-httpapi-${Environment}
+      ProtocolType: HTTP
+      CorsConfiguration:
+        AllowOrigins: ['*']
+        AllowMethods: ['GET','POST','OPTIONS']
+        AllowHeaders: ['*']
+
+  # Lambda permission for API Gateway
+  LambdaPermissionForApi:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref DexterFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*/*
+
+  # API Gateway integration
+  Integration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref HttpApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DexterFunction.Arn}/invocations
+      PayloadFormatVersion: '2.0'
+      TimeoutInMillis: 29000
+
+  RouteHealth:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: GET /health
+      Target: !Sub integrations/${Integration}
+
+  RouteChat:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: POST /chat
+      Target: !Sub integrations/${Integration}
+
+  StageProd:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref HttpApi
+      StageName: $default
+      AutoDeploy: true
+
+Outputs:
+  ApiEndpoint:
+    Description: Deployed HTTP API endpoint URL
+    Value: !Sub https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com
+  LambdaArn:
+    Description: Lambda function ARN
+    Value: !GetAtt DexterFunction.Arn
+

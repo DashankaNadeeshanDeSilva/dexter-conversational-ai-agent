@@ -4,6 +4,7 @@ uvicorn[standard]>=0.23.2
 pydantic>=2.10.0
 pydantic-settings>=2.10.1
 python-dotenv>=1.0.0
+mangum>=0.17.0
 
 # LangChain and LangGraph - Updated versions
 langchain>=0.3.0
@@ -26,7 +27,7 @@ PyJWT>=2.10.1
 # Web tools
 httpx>=0.25.0
 beautifulsoup4>=4.12.2
-duckduckgo-search>=3.9.3
+ddgs==9.5.5
 
 # NLP and Named Entity Recognition
 spacy>=3.7.0

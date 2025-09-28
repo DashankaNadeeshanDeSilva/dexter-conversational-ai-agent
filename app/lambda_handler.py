@@ -34,5 +34,3 @@ def lambda_handler(event, context):
     
     # Let Mangum handle the conversion
     return handler(event, context)
-
-

@@ -5,6 +5,7 @@ pydantic>=2.10.0
 pydantic-settings>=2.10.1
 python-dotenv>=1.0.0
 mangum>=0.17.0
+numpy==1.26.4
 
 # LangChain and LangGraph - Updated versions
 langchain>=0.3.0

@@ -81,6 +81,7 @@ lambda-build:
 
 # Run Lambda container locally with Runtime Interface Emulator
 # Note: for real Lambda simulation, mount AWS RIE or use `sam local`.
+# Use .env.lambda for Lambda container
 lambda-run:
 	# Pass environment via selected env file to avoid empty values causing Pydantic validation errors
 	docker run --rm --platform linux/amd64 -p 9000:8080 --env-file $(ENV_FILE) dexter-lambda:latest
@@ -90,14 +91,4 @@ lambda-invoke-health:
 	curl -s "http://localhost:9000/2015-03-31/functions/function/invocations" \
 	  -d '{"version":"2.0","routeKey":"GET /health","rawPath":"/health","rawQueryString":"","headers":{"content-type":"application/json","host":"localhost","x-forwarded-proto":"http"},"requestContext":{"http":{"method":"GET","path":"/health","sourceIp":"127.0.0.1","userAgent":"curl/8.5.0","protocol":"HTTP/1.1"}},"body":null,"isBase64Encoded":false}' | jq '.'
 
-# Debug: print env vars inside the Lambda image (override entrypoint)
-lambda-printenv:
-	docker run --rm --platform linux/amd64 --env-file $(ENV_FILE) --entrypoint /bin/sh dexter-lambda:latest -c 'printenv | grep -E "PINECONE|OPENAI|LANGCHAIN|MONGODB_URI|ENVIRONMENT" || true'
 
-# Debug: run a quick Pinecone check inside the image
-lambda-pinecone-check:
-	docker run --rm --platform linux/amd64 --env-file $(ENV_FILE) --entrypoint /var/lang/bin/python dexter-lambda:latest -c "import os,sys;print('PINECONE_API_KEY set:',bool(os.environ.get('PINECONE_API_KEY')));print('PINECONE_ENVIRONMENT:',os.environ.get('PINECONE_ENVIRONMENT'));\
-from pinecone import Pinecone;\
-pc=Pinecone(api_key=os.environ['PINECONE_API_KEY']);\
-print('Listing indexes...');\
-print(pc.list_indexes())"

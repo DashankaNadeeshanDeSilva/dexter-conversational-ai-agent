@@ -1,0 +1,20 @@
+# Lambda container image for Dexter (Python 3.11)
+# Uses AWS Lambda base image with Runtime Interface Client built-in
+
+FROM public.ecr.aws/lambda/python:3.11
+
+# Copy dependency specification and install
+COPY requirements.txt ./
+# Prefer binary wheels, upgrade pip/setuptools/wheel to improve wheel resolution
+RUN python -m pip install --upgrade pip setuptools wheel \
+    && pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY . ${LAMBDA_TASK_ROOT}
+
+# Set environment (optional defaults; real secrets come from Lambda env or Secrets Manager)
+ENV ENVIRONMENT=production
+
+# Command: set the handler module.function
+# We use the explicit function relocated to app/lambda_handler.py
+CMD ["app.lambda_handler.lambda_handler"]

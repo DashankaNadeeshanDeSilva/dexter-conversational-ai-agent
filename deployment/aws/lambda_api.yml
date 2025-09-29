@@ -1,2 +1,2 @@
-# deployment/aws/cloudformation.yml
+# deployment/aws/lambda_api.yml
 # This file is used to deploy the AI Agent with Memory to AWS.

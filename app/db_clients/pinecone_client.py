@@ -5,7 +5,7 @@ import logging
 import uuid
 from datetime import datetime
 
-from pinecone import Pinecone, PodSpec
+from pinecone import Pinecone, ServerlessSpec
 from langchain_openai import OpenAIEmbeddings
 from langchain_pinecone import PineconeVectorStore
 from langchain_core.documents import Document

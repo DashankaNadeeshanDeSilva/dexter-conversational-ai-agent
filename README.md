@@ -1,125 +1,133 @@
 
-# 🤖 Dexter - Conversational AI Agent for Customer Support Assistance
+# 🤖 Dexter — Conversational AI Agent for Customer Support Assistance
 
 ## 01. Introduction
 
-Dexter is a production-ready open-source AI agent backend designed for customer support assistance. It integrates four human-like memory types, short-term and long-term (episodic, semantic, and procedural) to deliver contextual, adaptive, and personalized interactions. Going beyond typical chatbots, Dexter combines LLM reasoning with persistent memory, and intelligent tool use to handle complex conversations.
+Dexter is a production-ready, serverless-first AI agent backend built for customer support assistance. It blends four human-like memory systems with tool use and LLM reasoning to deliver contextual, adaptive, and personalized conversations. It is designed for low cold-starts on AWS Lambda, efficient memory access, and clean extensibility.
 
-**[Read more about AI agent memory](https://dashankadesilva.medium.com/agentic-memory-how-ai-agents-learn-remember-and-improve-fd683c344685)**.
+**Read more:** [Agentic Memory — how AI agents learn, remember, and improve](https://dashankadesilva.medium.com/agentic-memory-how-ai-agents-learn-remember-and-improve-fd683c344685)
 
 ![](docs/System_Architecture_overview.jpeg)
 
-**[Detailed System Architecture](docs/Detailed_system.png)**
+See also: **[Detailed System Architecture](docs/Detailed_system.png)**
 
 ## 02. Motivation
 
-The motivation to build Dexter customer support AI agent stems from the belief that interactions with customer support AI assistant should feel more human-like - capable of adapting, remembering, learning from customer history, preferences, and providing personalized assistance over time.
+Customer support should feel human: aware of context, able to remember preferences, and capable of improving with every interaction. Dexter focuses on memory, tool-use, and safety to enable trustworthy, high-quality assistance.
 
 ## 03. Key Features
 
 ### Memory Systems
-- **Short-term Memory**: Maintains conversation context within sessions
-- **Semantic Memory**: Stores and retrieves factual knowledge from conversations
-- **Episodic Memory**: Remembers specific interactions and experiences
-- **Procedural Memory**: Learns successful patterns and strategies over time
+- **Short‑term Memory**: Maintains conversation context within a session
+- **Semantic Memory**: Retrieves factual knowledge and documents (Pinecone)
+- **Episodic Memory**: Remembers specific past interactions (MongoDB)
+- **Procedural Memory**: Reinforces successful strategies over time (MongoDB)
 
-### Tool Integration
-- **Product Search**: Find products with smart filtering and recommendations
-- **Appointment Management**: Schedule, modify, and track appointments
-- **Semantic Retrieval**: Query stored knowledge and past conversations
-- **Extensible Architecture**: Easy to add custom tools for specific needs
+### Tooling & Integrations
+- **Product Search**: Smart filtering and recommendations
+- **Appointment Management**: Scheduling, availability, updates, cancellations
+- **Semantic Retrieval**: Search knowledge and conversation history
+- **Web Search**: Fetch relevant external context when needed
+- **Extensible Tool Router**: Add custom domain tools easily
 
-### Personalized Experience
-- **User Preferences**: Learns and remembers individual user preferences
-- **Context Awareness**: Understands conversation flow and references
-- **Adaptive Responses**: Improves responses based on successful interactions
-- **Multi-session Continuity**: Maintains knowledge across multiple conversations
+### Developer Experience
+- **Serverless-first**: AWS Lambda + API Gateway with Mangum
+- **Lazy Initialization**: Cold-start optimized app boot for Lambda
+- **Optional Metrics**: Prometheus-style metrics exposed at `/metrics`
+- **Comprehensive Tests**: Pytest suite and utilities
 
 ## 04. Core Components
 
-- **ReAct Agent**: The main reasoning engine that processes queries and coordinates responses
-- **Memory Manager**: Orchestrates all memory systems and provides unified context
-- **Tool Router**: Intelligently selects and executes appropriate tools
-- **Memory Systems**: Four specialized memory types for comprehensive context management
+- **ReAct Agent**: Reasoning engine coordinating memory and tools
+- **Memory Manager**: Orchestrates short-term, semantic, episodic, procedural memory
+- **Tools**: Pluggable actions (product search, appointments, retrieval, web)
+- **FastAPI App**: HTTP API exposing chat, memory, and session endpoints
 
 ## 05. Quick Start
 
-### Prerequisites & Technology Stack
+### Prerequisites & Tech Stack
 
-* Python 3.11 or higher
-* MongoDB 5.0+ (data storage) and Pinecone (vector storage)
-* OpenAI API key (language processing)
-* **Core**: LangChain/LangGraph, FastAPI, OpenAI GPT-4  
-* **Memory**: MongoDB (episodic/procedural), Pinecone (semantic vectors), Redis (short-term)  
-* **Infrastructure**: Docker, AWS ECS, Prometheus/Grafana monitoring  
-* **Testing**: Pytest, LangSmith tracing, comprehensive test coverage  
+- **Python**: 3.11+
+- **Datastores**: MongoDB (episodic/procedural), Pinecone (semantic vectors)
+- **LLM Provider**: OpenAI API key
+- **Core**: FastAPI, Mangum, Pydantic
+- **Infra**: Docker (local), AWS Lambda + API Gateway (prod)
+- **Testing**: Pytest
 
-### Installation
+### Install & Run (Local)
 ```bash
-# Clone and setup
+# Clone and enter the project
 git clone https://github.com/yourusername/dexter-conversational-ai-agent.git
 cd dexter-conversational-ai-agent
-
-# Quick setup (recommended for first-time users)
-python setup_mongodb.py
-
-# Or manual setup:
-cp env.example .env
-# Edit .env file with your API keys and MongoDB connection string
 
 # Install dependencies
 pip install -r requirements.txt
 
-# Test MongoDB connection
-python test_mongodb_connection.py
-
-# Start with Docker (recommended)
-docker-compose up -d
-
-# Or run locally
-python -m uvicorn app.main:app --reload --port 8000
+# Start the API (dev)
+uvicorn app.api.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-**⚠️ Important**: If you encounter MongoDB connection issues, see [MongoDB Troubleshooting Guide](docs/MONGODB_TROUBLESHOOTING.md)
+Or use Docker Compose:
+```bash
+make docker-build
+make docker-run
+# Stop: make docker-down
+```
 
 ### Try It Out
 ```bash
-# Create a session
-curl -X POST "http://localhost:8000/api/v1/sessions" \
-     -H "Content-Type: application/json" \
-     -d '{"user_id": "user123"}'
+# Health
+curl http://localhost:8000/health
 
 # Chat with Dexter
-curl -X POST "http://localhost:8000/api/v1/chat" \
+curl -X POST "http://localhost:8000/chat" \
      -H "Content-Type: application/json" \
      -d '{
        "message": "Find me wireless headphones under $100",
-       "session_id": "your_session_id",
+       "session_id": null,
+       "conversation_id": null,
        "user_id": "user123"
      }'
+
+# Query memories (semantic/episodic/procedural)
+curl -X POST "http://localhost:8000/memories/query" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "user_id": "user123",
+       "memory_type": "semantic",
+       "query": "discount policy",
+       "limit": 5
+     }'
 ```
-Your Dexter agent will be running (locally) at `http://localhost:8000` and you can try using **Postman**.
 
+## 06. API Overview
 
-## 06. Usage Examples: 
-Please refer [Usage Examples](docs/USAGE_EXAMPLES.md) to see how to use different functionalities
+- **GET** `/health` — service health
+- **POST** `/chat` — send a message, get agent response
+- **POST** `/conversations/create_new` — create a conversation for a user
+- **GET** `/conversations/{user_id}` — list recent conversations
+- **GET** `/conversations/{user_id}/{conversation_id}` — fetch a specific conversation
+- **POST** `/memories/query` — query semantic/episodic/procedural memories
+- **POST** `/session/{session_id}/reset` — reset short‑term memory
+
+Note: When `ENABLE_METRICS=true`, Prometheus metrics are exposed at **`/metrics`**.
 
 ## 07. Development
 
-Read more on Contributing, extending tools, testing, and development workflow, please refer to **[Development Guide](docs/DEVELOPMENT.md)**
+See the **[Development Guide](docs/DEVELOPMENT.md)** for setup, extending tools, testing, and best practices.
 
-### 1. Project Structure
+### Project Structure
 ```
 dexter-conversational-ai-agent/
 ├── app/
 │   ├── agent/              # Core ReAct agent logic
-│   ├── api/                # FastAPI endpoints
+│   ├── api/                # FastAPI endpoints (incl. lazy-init app)
 │   ├── memory/             # Memory system implementations
 │   ├── tools/              # Tool implementations
 │   └── utils/              # Utility functions
 ├── tests/                  # Comprehensive test suite
 ├── docs/                   # Documentation
-└── deployment/             # Docker and deployment configs
+└── deployment/             # Lambda container & deployment scripts
 ```
 Please refer [Detailed project Structure](docs/project_structure.md) for detailed information.
 
@@ -148,72 +156,79 @@ Please refer [Detailed project Structure](docs/project_structure.md) for detaile
 
 ### 4. [Memory System Details](docs/USAGE_EXAMPLES.md) to see how to introduce new tools to the agent.
 
-## 08. Running Tests
+### Makefile Essentials
 ```bash
-# Run all tests
+# Run tests
 make test
 
-# Run with coverage
-pytest --cov=app --cov-report=html
+# Local dev (uvicorn on :8000)
+make dev
 
-# Run specific test types
-pytest tests/unit/         # Unit tests
-pytest tests/integration/  # Integration tests
-pytest tests/e2e/         # End-to-end tests
-```
-
-## 09. Deployment
-
-### Development
-```bash
-# Build and run with Docker Compose
+# Docker workflow
 make docker-build
 make docker-run
+make docker-down
+
+# Lambda local build & run (uses Docker, linux/amd64)
+make lambda-build
+make lambda-run            # pass ENV_FILE=.env.lambda if needed
+make lambda-invoke-health  # curl http://localhost:9000/2015-03-31/functions/function/invocations
 ```
 
-### Production
+## 08. Deployment (Serverless‑First)
+
+Dexter is optimized for **AWS Lambda + API Gateway** using a Lambda container image. The app uses **Mangum** to translate API Gateway events into ASGI for FastAPI, with **lazy initialization** to reduce cold-starts.
+
+### Lambda Container
+- Image base: `public.ecr.aws/lambda/python:3.11`
+- Entrypoint: `app/lambda_handler.py` → `lambda_handler`
+- App module (lazy-init): `app/api/main_lazy_init.py`
+
+Build and test locally:
 ```bash
-# Use the production Docker Compose
-docker-compose -f docker-compose.prod.yml up -d
+make lambda-build
+make lambda-run           # exposes RIE at :9000
+# In a separate shell, invoke health
+make lambda-invoke-health
 ```
 
-## 10. Documentation
+### Deploy
+- Use `deployment/scripts/` for automated ECR push and stack updates
+- See `deployment/aws/cloudformation.yml` and `deployment/aws/lambda_api.yml`
+- Configure secrets via Lambda env vars or AWS Secrets Manager
 
-### For more details please refer to our comprehensive documentations
-- **[Architecture Guide](docs/ARCHITECTURE.md)** - Dive into memory systems, cognitive design principles, and system architecture
-- **[API Reference](docs/API.md)** - Complete API documentation with examples and integration guides  
-- **[Deployment Guide](docs/DEPLOYMENT.md)** - Production setup, AWS deployment, monitoring, and configuration
-- **[Development Guide](docs/DEVELOPMENT.md)** - Contributing, extending tools, testing, and development workflow
+ECS/ALB instructions remain in docs for reference but are deprecated in favor of Lambda. If you still need ECS, review `docs/DEPLOYMENT.md` and `.github/workflows/` and adapt accordingly.
 
+## 09. Monitoring & Observability
 
-## 11. Monitoring and Observability
+- **Default**: CloudWatch Logs (Lambda)
+- **Optional**: Prometheus/Grafana for local or containerized deployments
+  - App metrics available at `/metrics` when `ENABLE_METRICS=true`
+  - Example configs under `monitoring/`
 
-Dexter includes comprehensive monitoring capabilities:
+## 10. Security
 
-- **Performance Metrics**: Response times, tool usage, memory operations
-- **Error Tracking**: Detailed error logging and alerting
-- **Memory Analytics**: Memory system effectiveness and usage patterns
-- **User Analytics**: Conversation flows and user satisfaction metrics
+- **Secrets**: Prefer AWS Secrets Manager for `OPENAI_API_KEY`, `PINECONE_API_KEY`, `MONGODB_URI`
+- **Least Privilege**: Scope IAM role to only required services
+- **Validation**: Pydantic schema validation on inputs
+- **Privacy**: Store only what you need; configure retention policies
 
-## 12. Security
+## 11. Usage Examples
 
-- **API Authentication**: Token-based authentication for all endpoints
-- **Input Validation**: Comprehensive input sanitization and validation
-- **Rate Limiting**: Protection against abuse and DoS attacks
-- **Data Privacy**: Secure handling of user data and conversations
+See **[Usage Examples](docs/USAGE_EXAMPLES.md)** for end‑to‑end flows and tool usage.
 
-## 13. Contributing
+## 12. Contributing
 
-We welcome contributions! Please see our [Development Guide](docs/DEVELOPMENT.md) for detailed information.
+Contributions are welcome! Please read the **[Development Guide](docs/DEVELOPMENT.md)** and open a PR.
 
-## 14. License
+## 13. License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT — see **[LICENSE](LICENSE)**.
 
-## 15. Acknowledgments
+## 14. Acknowledgments
 
-- Built with [FastAPI](https://fastapi.tiangolo.com/) for high-performance APIs
-- Powered by [OpenAI](https://openai.com/) for language understanding
+- Built with [FastAPI](https://fastapi.tiangolo.com/)
+- Powered by [OpenAI](https://openai.com/)
 - Vector storage by [Pinecone](https://www.pinecone.io/)
 - Data persistence with [MongoDB](https://www.mongodb.com/)
 
@@ -221,4 +236,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Made with ❤️ by [Dashanka De Silva](https://www.linkedin.com/in/dashankadesilva/)**
 
-***Dexter - Because conversations should be intelligent, memorable, and personal.***
+Dexter — because conversations should be intelligent, memorable, and personal.

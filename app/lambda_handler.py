@@ -4,7 +4,10 @@ This file bridges API Gateway events to FastAPI using Mangum.
 """
 
 from mangum import Mangum
-from app.api.main import app
+# main version
+#from app.api.main import app
+# main lazy init version
+from app.api.main_lazy_init import app
 
 # Create the Lambda handler
 # This translates API Gateway events into ASGI calls

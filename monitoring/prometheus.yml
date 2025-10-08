@@ -10,3 +10,7 @@ scrape_configs:
   - job_name: 'ai_agent'
     static_configs:
       - targets: ['app:8000']
+  
+  - job_name: 'ai_agent_evaluation'
+    static_configs:
+      - targets: ['localhost:9091']

@@ -1,0 +1,465 @@
+[
+  {
+    "id": "conv_001",
+    "category": "conversation",
+    "difficulty": "medium",
+    "conversation_name": "Product search refinement",
+    "turns": [
+      {
+        "turn": 1,
+        "user_message": "I'm looking for headphones",
+        "expected_behavior": "Search for headphones, possibly ask for preferences",
+        "expected_tool": "search_products",
+        "context_messages": []
+      },
+      {
+        "turn": 2,
+        "user_message": "Wireless ones",
+        "expected_behavior": "Refine search to wireless headphones",
+        "expected_tool": "search_products",
+        "context_messages": [
+          {"role": "user", "content": "I'm looking for headphones"},
+          {"role": "assistant", "content": "I found several headphones. Would you like to see specific types?"}
+        ]
+      },
+      {
+        "turn": 3,
+        "user_message": "Under $100",
+        "expected_behavior": "Further refine with price constraint",
+        "expected_tool": "search_products",
+        "context_messages": [
+          {"role": "user", "content": "I'm looking for headphones"},
+          {"role": "assistant", "content": "I found several headphones. Would you like to see specific types?"},
+          {"role": "user", "content": "Wireless ones"},
+          {"role": "assistant", "content": "Here are wireless headphones..."}
+        ]
+      }
+    ],
+    "evaluation_criteria": ["context_maintenance", "progressive_refinement", "memory_of_constraints"],
+    "multi_turn": true
+  },
+  {
+    "id": "conv_002",
+    "category": "conversation",
+    "difficulty": "hard",
+    "conversation_name": "Appointment booking with complications",
+    "turns": [
+      {
+        "turn": 1,
+        "user_message": "I need to see a doctor",
+        "expected_behavior": "Ask for specifics (provider, reason, timing)",
+        "expected_tool": "clarification",
+        "context_messages": []
+      },
+      {
+        "turn": 2,
+        "user_message": "Dr. Smith for a checkup",
+        "expected_behavior": "Request preferred time/date",
+        "expected_tool": "book_appointment",
+        "context_messages": [
+          {"role": "user", "content": "I need to see a doctor"},
+          {"role": "assistant", "content": "I can help with that. Which doctor would you like to see?"}
+        ]
+      },
+      {
+        "turn": 3,
+        "user_message": "Next week sometime",
+        "expected_behavior": "Suggest available slots next week",
+        "expected_tool": "book_appointment",
+        "context_messages": [
+          {"role": "user", "content": "I need to see a doctor"},
+          {"role": "assistant", "content": "I can help with that. Which doctor would you like to see?"},
+          {"role": "user", "content": "Dr. Smith for a checkup"},
+          {"role": "assistant", "content": "When would you like to schedule this checkup?"}
+        ]
+      },
+      {
+        "turn": 4,
+        "user_message": "Actually, make it Dr. Johnson instead",
+        "expected_behavior": "Update provider to Dr. Johnson, maintain other context",
+        "expected_tool": "book_appointment",
+        "context_messages": [
+          {"role": "user", "content": "I need to see a doctor"},
+          {"role": "assistant", "content": "I can help with that. Which doctor would you like to see?"},
+          {"role": "user", "content": "Dr. Smith for a checkup"},
+          {"role": "assistant", "content": "When would you like to schedule this checkup?"},
+          {"role": "user", "content": "Next week sometime"},
+          {"role": "assistant", "content": "I found availability with Dr. Smith next week on Tuesday at 2pm, Wednesday at 10am..."}
+        ]
+      }
+    ],
+    "evaluation_criteria": ["context_tracking", "correction_handling", "information_persistence"],
+    "multi_turn": true
+  },
+  {
+    "id": "conv_003",
+    "category": "conversation",
+    "difficulty": "medium",
+    "conversation_name": "Knowledge retrieval chain",
+    "turns": [
+      {
+        "turn": 1,
+        "user_message": "What's your return policy?",
+        "expected_behavior": "Retrieve and explain return policy",
+        "expected_tool": "retrieve_knowledge",
+        "context_messages": []
+      },
+      {
+        "turn": 2,
+        "user_message": "How many days do I have?",
+        "expected_behavior": "Refer to previously retrieved policy information for timeframe",
+        "expected_tool": "none",
+        "context_messages": [
+          {"role": "user", "content": "What's your return policy?"},
+          {"role": "assistant", "content": "Our return policy allows returns within 30 days of purchase with receipt..."}
+        ]
+      },
+      {
+        "turn": 3,
+        "user_message": "What if I don't have the receipt?",
+        "expected_behavior": "Provide information about returns without receipt",
+        "expected_tool": "retrieve_knowledge",
+        "context_messages": [
+          {"role": "user", "content": "What's your return policy?"},
+          {"role": "assistant", "content": "Our return policy allows returns within 30 days of purchase with receipt..."},
+          {"role": "user", "content": "How many days do I have?"},
+          {"role": "assistant", "content": "You have 30 days from the purchase date."}
+        ]
+      }
+    ],
+    "evaluation_criteria": ["information_recall", "follow_up_handling", "policy_knowledge"],
+    "multi_turn": true
+  },
+  {
+    "id": "conv_004",
+    "category": "conversation",
+    "difficulty": "hard",
+    "conversation_name": "Mixed intent conversation",
+    "turns": [
+      {
+        "turn": 1,
+        "user_message": "I need a new laptop",
+        "expected_behavior": "Search for laptops, possibly ask for requirements",
+        "expected_tool": "search_products",
+        "context_messages": []
+      },
+      {
+        "turn": 2,
+        "user_message": "Also, when are you open?",
+        "expected_behavior": "Handle intent switch, provide hours information",
+        "expected_tool": "retrieve_knowledge",
+        "context_messages": [
+          {"role": "user", "content": "I need a new laptop"},
+          {"role": "assistant", "content": "I can help you find a laptop. What will you be using it for?"}
+        ]
+      },
+      {
+        "turn": 3,
+        "user_message": "Back to the laptop - I need it for gaming",
+        "expected_behavior": "Return to laptop search with gaming requirement",
+        "expected_tool": "search_products",
+        "context_messages": [
+          {"role": "user", "content": "I need a new laptop"},
+          {"role": "assistant", "content": "I can help you find a laptop. What will you be using it for?"},
+          {"role": "user", "content": "Also, when are you open?"},
+          {"role": "assistant", "content": "We're open Monday-Friday 9am-6pm, Saturday 10am-4pm..."}
+        ]
+      }
+    ],
+    "evaluation_criteria": ["intent_switching", "context_recovery", "multi_task_handling"],
+    "multi_turn": true
+  },
+  {
+    "id": "conv_005",
+    "category": "conversation",
+    "difficulty": "medium",
+    "conversation_name": "Appointment cancellation and rebooking",
+    "turns": [
+      {
+        "turn": 1,
+        "user_message": "I need to cancel my Friday appointment",
+        "expected_behavior": "Cancel Friday appointment",
+        "expected_tool": "cancel_appointment",
+        "context_messages": []
+      },
+      {
+        "turn": 2,
+        "user_message": "Can I reschedule it for next week?",
+        "expected_behavior": "Book new appointment for next week",
+        "expected_tool": "book_appointment",
+        "context_messages": [
+          {"role": "user", "content": "I need to cancel my Friday appointment"},
+          {"role": "assistant", "content": "I've cancelled your Friday appointment with Dr. Smith."}
+        ]
+      },
+      {
+        "turn": 3,
+        "user_message": "Same time if possible",
+        "expected_behavior": "Try to book same time slot next week",
+        "expected_tool": "book_appointment",
+        "context_messages": [
+          {"role": "user", "content": "I need to cancel my Friday appointment"},
+          {"role": "assistant", "content": "I've cancelled your Friday appointment with Dr. Smith at 2pm."},
+          {"role": "user", "content": "Can I reschedule it for next week?"},
+          {"role": "assistant", "content": "I can help you schedule for next week. What day works best?"}
+        ]
+      }
+    ],
+    "evaluation_criteria": ["cancellation_and_rebooking", "time_preference_memory", "provider_persistence"],
+    "multi_turn": true
+  },
+  {
+    "id": "conv_006",
+    "category": "conversation",
+    "difficulty": "hard",
+    "conversation_name": "Price comparison and decision making",
+    "turns": [
+      {
+        "turn": 1,
+        "user_message": "Show me smartphones under $500",
+        "expected_behavior": "Search for smartphones with max price $500",
+        "expected_tool": "search_products",
+        "context_messages": []
+      },
+      {
+        "turn": 2,
+        "user_message": "What about tablets in that price range?",
+        "expected_behavior": "Search for tablets under $500",
+        "expected_tool": "search_products",
+        "context_messages": [
+          {"role": "user", "content": "Show me smartphones under $500"},
+          {"role": "assistant", "content": "Here are smartphones under $500: [list of phones]..."}
+        ]
+      },
+      {
+        "turn": 3,
+        "user_message": "Which is better for reading?",
+        "expected_behavior": "Compare previously mentioned devices for reading use case",
+        "expected_tool": "none",
+        "context_messages": [
+          {"role": "user", "content": "Show me smartphones under $500"},
+          {"role": "assistant", "content": "Here are smartphones under $500: [list of phones]..."},
+          {"role": "user", "content": "What about tablets in that price range?"},
+          {"role": "assistant", "content": "Here are tablets under $500: [list of tablets]..."}
+        ]
+      },
+      {
+        "turn": 4,
+        "user_message": "Show me the best-rated tablet from that list",
+        "expected_behavior": "Recall tablet results and identify highest rated",
+        "expected_tool": "none",
+        "context_messages": [
+          {"role": "user", "content": "Show me smartphones under $500"},
+          {"role": "assistant", "content": "Here are smartphones under $500: [list of phones]..."},
+          {"role": "user", "content": "What about tablets in that price range?"},
+          {"role": "assistant", "content": "Here are tablets under $500: [list of tablets]..."},
+          {"role": "user", "content": "Which is better for reading?"},
+          {"role": "assistant", "content": "Tablets are generally better for reading due to larger screens..."}
+        ]
+      }
+    ],
+    "evaluation_criteria": ["comparison_across_searches", "result_memory", "recommendation_logic"],
+    "multi_turn": true
+  },
+  {
+    "id": "conv_007",
+    "category": "conversation",
+    "difficulty": "medium",
+    "conversation_name": "Information gathering conversation",
+    "turns": [
+      {
+        "turn": 1,
+        "user_message": "Do you ship internationally?",
+        "expected_behavior": "Retrieve international shipping policy",
+        "expected_tool": "retrieve_knowledge",
+        "context_messages": []
+      },
+      {
+        "turn": 2,
+        "user_message": "How long does it take to Canada?",
+        "expected_behavior": "Provide Canada-specific shipping timeframe",
+        "expected_tool": "retrieve_knowledge",
+        "context_messages": [
+          {"role": "user", "content": "Do you ship internationally?"},
+          {"role": "assistant", "content": "Yes, we ship to many countries including Canada, UK, Australia..."}
+        ]
+      },
+      {
+        "turn": 3,
+        "user_message": "What's the cost?",
+        "expected_behavior": "Provide Canada shipping cost information",
+        "expected_tool": "retrieve_knowledge",
+        "context_messages": [
+          {"role": "user", "content": "Do you ship internationally?"},
+          {"role": "assistant", "content": "Yes, we ship to many countries including Canada, UK, Australia..."},
+          {"role": "user", "content": "How long does it take to Canada?"},
+          {"role": "assistant", "content": "Shipping to Canada typically takes 7-10 business days."}
+        ]
+      }
+    ],
+    "evaluation_criteria": ["progressive_information_disclosure", "location_context_maintenance"],
+    "multi_turn": true
+  },
+  {
+    "id": "conv_008",
+    "category": "conversation",
+    "difficulty": "hard",
+    "conversation_name": "Complex product search with multiple criteria",
+    "turns": [
+      {
+        "turn": 1,
+        "user_message": "I'm looking for running shoes",
+        "expected_behavior": "Search for running shoes",
+        "expected_tool": "search_products",
+        "context_messages": []
+      },
+      {
+        "turn": 2,
+        "user_message": "For trail running specifically",
+        "expected_behavior": "Refine to trail running shoes",
+        "expected_tool": "search_products",
+        "context_messages": [
+          {"role": "user", "content": "I'm looking for running shoes"},
+          {"role": "assistant", "content": "Here are our running shoes..."}
+        ]
+      },
+      {
+        "turn": 3,
+        "user_message": "I need waterproof ones",
+        "expected_behavior": "Add waterproof requirement to trail running shoes",
+        "expected_tool": "search_products",
+        "context_messages": [
+          {"role": "user", "content": "I'm looking for running shoes"},
+          {"role": "assistant", "content": "Here are our running shoes..."},
+          {"role": "user", "content": "For trail running specifically"},
+          {"role": "assistant", "content": "Here are trail running shoes..."}
+        ]
+      },
+      {
+        "turn": 4,
+        "user_message": "Under $150",
+        "expected_behavior": "Add price constraint while maintaining all previous criteria",
+        "expected_tool": "search_products",
+        "context_messages": [
+          {"role": "user", "content": "I'm looking for running shoes"},
+          {"role": "assistant", "content": "Here are our running shoes..."},
+          {"role": "user", "content": "For trail running specifically"},
+          {"role": "assistant", "content": "Here are trail running shoes..."},
+          {"role": "user", "content": "I need waterproof ones"},
+          {"role": "assistant", "content": "Here are waterproof trail running shoes..."}
+        ]
+      },
+      {
+        "turn": 5,
+        "user_message": "Do any of these come in size 11?",
+        "expected_behavior": "Check size availability for previously shown results",
+        "expected_tool": "search_products",
+        "context_messages": [
+          {"role": "user", "content": "I'm looking for running shoes"},
+          {"role": "assistant", "content": "Here are our running shoes..."},
+          {"role": "user", "content": "For trail running specifically"},
+          {"role": "assistant", "content": "Here are trail running shoes..."},
+          {"role": "user", "content": "I need waterproof ones"},
+          {"role": "assistant", "content": "Here are waterproof trail running shoes..."},
+          {"role": "user", "content": "Under $150"},
+          {"role": "assistant", "content": "Here are waterproof trail running shoes under $150..."}
+        ]
+      }
+    ],
+    "evaluation_criteria": ["cumulative_criteria_building", "complex_context_maintenance", "result_reference"],
+    "multi_turn": true
+  },
+  {
+    "id": "conv_009",
+    "category": "conversation",
+    "difficulty": "medium",
+    "conversation_name": "Appointment time negotiation",
+    "turns": [
+      {
+        "turn": 1,
+        "user_message": "I need an appointment on Thursday",
+        "expected_behavior": "Search for Thursday appointments",
+        "expected_tool": "book_appointment",
+        "context_messages": []
+      },
+      {
+        "turn": 2,
+        "user_message": "Is 10am available?",
+        "expected_behavior": "Check Thursday 10am availability",
+        "expected_tool": "book_appointment",
+        "context_messages": [
+          {"role": "user", "content": "I need an appointment on Thursday"},
+          {"role": "assistant", "content": "I have availability on Thursday at 2pm and 4pm. Would either work?"}
+        ]
+      },
+      {
+        "turn": 3,
+        "user_message": "That's too late. What about Wednesday?",
+        "expected_behavior": "Switch to Wednesday and show available times",
+        "expected_tool": "book_appointment",
+        "context_messages": [
+          {"role": "user", "content": "I need an appointment on Thursday"},
+          {"role": "assistant", "content": "I have availability on Thursday at 2pm and 4pm. Would either work?"},
+          {"role": "user", "content": "Is 10am available?"},
+          {"role": "assistant", "content": "Unfortunately 10am on Thursday is not available."}
+        ]
+      }
+    ],
+    "evaluation_criteria": ["time_negotiation", "alternative_suggestion", "date_switching"],
+    "multi_turn": true
+  },
+  {
+    "id": "conv_010",
+    "category": "conversation",
+    "difficulty": "hard",
+    "conversation_name": "Multi-tool usage in conversation",
+    "turns": [
+      {
+        "turn": 1,
+        "user_message": "What's the weather like today?",
+        "expected_behavior": "Search web for current weather",
+        "expected_tool": "web_search",
+        "context_messages": []
+      },
+      {
+        "turn": 2,
+        "user_message": "Good, then I should book that outdoor appointment. Schedule with Dr. Park for tomorrow at 3pm",
+        "expected_behavior": "Book appointment based on weather context",
+        "expected_tool": "book_appointment",
+        "context_messages": [
+          {"role": "user", "content": "What's the weather like today?"},
+          {"role": "assistant", "content": "It's sunny and 72°F today with clear skies."}
+        ]
+      },
+      {
+        "turn": 3,
+        "user_message": "Also, do you have any sunscreen products?",
+        "expected_behavior": "Search for sunscreen products",
+        "expected_tool": "search_products",
+        "context_messages": [
+          {"role": "user", "content": "What's the weather like today?"},
+          {"role": "assistant", "content": "It's sunny and 72°F today with clear skies."},
+          {"role": "user", "content": "Good, then I should book that outdoor appointment. Schedule with Dr. Park for tomorrow at 3pm"},
+          {"role": "assistant", "content": "I've scheduled your appointment with Dr. Park for tomorrow at 3pm."}
+        ]
+      },
+      {
+        "turn": 4,
+        "user_message": "What's your return policy again?",
+        "expected_behavior": "Retrieve return policy information",
+        "expected_tool": "retrieve_knowledge",
+        "context_messages": [
+          {"role": "user", "content": "What's the weather like today?"},
+          {"role": "assistant", "content": "It's sunny and 72°F today with clear skies."},
+          {"role": "user", "content": "Good, then I should book that outdoor appointment. Schedule with Dr. Park for tomorrow at 3pm"},
+          {"role": "assistant", "content": "I've scheduled your appointment with Dr. Park for tomorrow at 3pm."},
+          {"role": "user", "content": "Also, do you have any sunscreen products?"},
+          {"role": "assistant", "content": "Yes, here are some sunscreen products..."}
+        ]
+      }
+    ],
+    "evaluation_criteria": ["multi_tool_coordination", "context_across_tools", "intent_diversity"],
+    "multi_turn": true
+  }
+]
+

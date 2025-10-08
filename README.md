@@ -3,7 +3,7 @@
 
 ## 01. Introduction
 
-Dexter is a production-ready, serverless-first AI agent backend built for customer support assistance. It blends four human-like memory systems with tool use and LLM reasoning to deliver contextual, adaptive, and personalized conversations. It is designed for low cold-starts on AWS Lambda, efficient memory access, and clean extensibility.
+Dexter is a **production-ready, serverless-first AI agent backend** built for customer support assistance. It blends four **human-like memory systems** with **tool** use and **LLM reasoning** to deliver contextual, adaptive, and personalized conversations. It is designed for **low cold-starts** on **AWS Lambda, efficient memory access, and clean extensibility**. Dexter includes a comprehensive **evaluation system with LLM-as-judge assessment**, enabling continuous quality monitoring and improvement.
 
 **Read more:** [Agentic Memory — how AI agents learn, remember, and improve](https://dashankadesilva.medium.com/agentic-memory-how-ai-agents-learn-remember-and-improve-fd683c344685)
 
@@ -35,6 +35,7 @@ Customer support should feel human: aware of context, able to remember preferenc
 - **Lazy Initialization**: Cold-start optimized app boot for Lambda
 - **Optional Metrics**: Prometheus-style metrics exposed at `/metrics`
 - **Comprehensive Tests**: Pytest suite and utilities
+- **Evaluation System**: LLM-as-judge evaluation with 130 test cases, automated quality assessment, and Prometheus metrics
 
 ## 04. Core Components
 
@@ -125,8 +126,13 @@ dexter-conversational-ai-agent/
 │   ├── memory/             # Memory system implementations
 │   ├── tools/              # Tool implementations
 │   └── utils/              # Utility functions
+├── evaluation/             # Agent evaluation system
+│   ├── datasets/           # Benchmark test cases (130 cases)
+│   ├── results/            # Evaluation results and reports
+│   └── *.py                # Evaluation engine, metrics, reports
 ├── tests/                  # Comprehensive test suite
 ├── docs/                   # Documentation
+├── monitoring/             # Prometheus & Grafana configs
 └── deployment/             # Lambda container & deployment scripts
 ```
 Please refer [Detailed project Structure](docs/project_structure.md) for detailed information.
@@ -206,26 +212,113 @@ ECS/ALB instructions remain in docs for reference but are deprecated in favor of
   - App metrics available at `/metrics` when `ENABLE_METRICS=true`
   - Example configs under `monitoring/`
 
-## 10. Security
+## 10. Agent Evaluation & Quality Assurance
+
+Dexter includes a comprehensive evaluation system to assess and monitor agent performance across multiple dimensions.
+
+### Evaluation System Features
+
+- **Benchmark Datasets**: 130 test cases covering all agent capabilities
+  - 100 comprehensive test cases (product search, appointments, knowledge retrieval, web search)
+  - 20 edge cases (ambiguous queries, error handling, safety boundaries)
+  - 10 multi-turn conversation scenarios
+- **LLM-as-Judge**: Automated quality assessment using GPT-3.5-turbo
+  - 13 evaluation dimensions (relevance, accuracy, tool usage, safety, etc.)
+  - Weighted scoring with configurable thresholds
+  - Detailed reasoning for each score
+- **Prometheus Metrics**: 15 custom metrics for real-time monitoring
+  - Quality scores, pass rates, tool usage, latency tracking
+  - Metrics server on port 9091
+- **Comprehensive Reports**: Detailed analysis with markdown reports
+  - Per-case results, aggregate statistics, failure analysis
+  - Comparison reports across multiple evaluation runs
+
+### Quick Start: Run Your First Evaluation
+
+```bash
+# Test with 5 cases (quick verification)
+python evaluation/run_evaluation.py --dataset benchmark_v1 --max-cases 5 --verbose
+
+# Run full benchmark (100 cases, ~30-45 minutes)
+python evaluation/run_evaluation.py --dataset benchmark_v1
+
+# Run edge cases
+python evaluation/run_evaluation.py --dataset edge_cases
+
+# Start metrics server (separate terminal)
+python evaluation/metrics_server.py
+```
+
+### View Evaluation Results
+
+```bash
+# List recent evaluations
+python evaluation/run_evaluation.py --list-results
+
+# View detailed report
+cat evaluation/results/report_benchmark_v1_*.md
+
+# Compare multiple runs
+python evaluation/run_evaluation.py --compare benchmark_v1 edge_cases
+```
+
+### Evaluation Metrics in Prometheus
+
+The evaluation system exposes custom metrics that integrate with your existing Prometheus setup:
+
+```yaml
+# Already configured in monitoring/prometheus.yml
+scrape_configs:
+  - job_name: 'ai_agent_evaluation'
+    static_configs:
+      - targets: ['localhost:9091']
+```
+
+Key metrics include:
+- `agent_evaluation_pass_rate` - Pass rate by category
+- `agent_tool_success_rate` - Success rate per tool
+- `agent_response_quality_score` - Quality scores by dimension
+- `agent_tool_latency_seconds` - Tool execution latency
+
+### Documentation
+
+- **Full Guide**: [`evaluation/README.md`](evaluation/README.md) - Complete reference
+- **Quick Start**: [`evaluation/GETTING_STARTED.md`](evaluation/GETTING_STARTED.md) - First-time setup
+- **Quick Reference**: [`evaluation/QUICK_REFERENCE.md`](evaluation/QUICK_REFERENCE.md) - Command cheat sheet
+
+### Expected Results (First Run)
+
+- **Pass Rate**: 70-85%
+- **Average Quality Score**: 7.0-8.5 out of 10
+- **Common Areas for Improvement**: Tool selection (80-90%), parameter extraction (75-85%)
+
+The evaluation system helps you:
+- ✅ Establish performance baselines
+- ✅ Track quality trends over time
+- ✅ Identify areas for improvement
+- ✅ Validate changes before deployment
+- ✅ Monitor production-like scenarios
+
+## 11. Security
 
 - **Secrets**: Prefer AWS Secrets Manager for `OPENAI_API_KEY`, `PINECONE_API_KEY`, `MONGODB_URI`
 - **Least Privilege**: Scope IAM role to only required services
 - **Validation**: Pydantic schema validation on inputs
 - **Privacy**: Store only what you need; configure retention policies
 
-## 11. Usage Examples
+## 12. Usage Examples
 
 See **[Usage Examples](docs/USAGE_EXAMPLES.md)** for end‑to‑end flows and tool usage.
 
-## 12. Contributing
+## 13. Contributing
 
 Contributions are welcome! Please read the **[Development Guide](docs/DEVELOPMENT.md)** and open a PR.
 
-## 13. License
+## 14. License
 
 MIT — see **[LICENSE](LICENSE)**.
 
-## 14. Acknowledgments
+## 15. Acknowledgments
 
 - Built with [FastAPI](https://fastapi.tiangolo.com/)
 - Powered by [OpenAI](https://openai.com/)

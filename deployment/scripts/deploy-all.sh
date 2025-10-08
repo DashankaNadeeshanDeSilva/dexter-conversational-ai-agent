@@ -66,3 +66,7 @@ echo "📚 Useful Commands:"
 echo "• View logs: aws logs tail /aws/lambda/$FUNCTION_NAME --follow"
 echo "• Update function: aws lambda update-function-code --function-name $FUNCTION_NAME --image-uri $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$REPO_NAME:latest"
 echo "• Test function: aws lambda invoke --function-name $FUNCTION_NAME response.json"
+
+
+
+

@@ -147,6 +147,12 @@ env.bak/
 venv.bak/
 .env.production
 
+# tecnhical paper
+/techical_paper/
+
+# Evaluation results (keep datasets but ignore generated results)
+evaluation/results/*
+!evaluation/results/.gitkeep
 
 # Spyder project settings
 .spyderproject

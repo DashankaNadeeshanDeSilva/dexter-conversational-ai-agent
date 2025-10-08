@@ -1,0 +1,1349 @@
+[
+  {
+    "id": "prod_001",
+    "category": "product_search",
+    "difficulty": "easy",
+    "user_message": "I'm looking for wireless headphones under $100",
+    "expected_behavior": "Search for products in electronics category with wireless feature and price filter max $100",
+    "expected_tool": "search_products",
+    "expected_parameters": {
+      "category": "electronics",
+      "max_price": 100,
+      "features": ["wireless"]
+    },
+    "evaluation_criteria": ["tool_selection", "parameter_extraction", "price_parsing"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "prod_002",
+    "category": "product_search",
+    "difficulty": "easy",
+    "user_message": "Show me running shoes",
+    "expected_behavior": "Search for products in sports/clothing category for running shoes",
+    "expected_tool": "search_products",
+    "expected_parameters": {
+      "category": "sports",
+      "query": "running shoes"
+    },
+    "evaluation_criteria": ["tool_selection", "category_detection"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "prod_003",
+    "category": "product_search",
+    "difficulty": "medium",
+    "user_message": "I need a laptop for gaming, budget is between $800 and $1200",
+    "expected_behavior": "Search for gaming laptops in electronics with price range $800-$1200",
+    "expected_tool": "search_products",
+    "expected_parameters": {
+      "category": "electronics",
+      "min_price": 800,
+      "max_price": 1200,
+      "features": ["gaming"]
+    },
+    "evaluation_criteria": ["price_range_parsing", "use_case_detection"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "prod_004",
+    "category": "product_search",
+    "difficulty": "medium",
+    "user_message": "Find me waterproof bluetooth speakers",
+    "expected_behavior": "Search for electronics with waterproof and bluetooth features",
+    "expected_tool": "search_products",
+    "expected_parameters": {
+      "category": "electronics",
+      "features": ["waterproof", "bluetooth"]
+    },
+    "evaluation_criteria": ["multi_feature_extraction"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "prod_005",
+    "category": "product_search",
+    "difficulty": "hard",
+    "user_message": "I want a good quality camera for outdoor photography, not too expensive though",
+    "expected_behavior": "Search for cameras in electronics category with outdoor/photography features, handle ambiguous price constraint",
+    "expected_tool": "search_products",
+    "expected_parameters": {
+      "category": "electronics",
+      "query": "camera outdoor photography"
+    },
+    "evaluation_criteria": ["ambiguous_price_handling", "use_case_understanding"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "appt_001",
+    "category": "appointment",
+    "difficulty": "easy",
+    "user_message": "I need to book an appointment with Dr. Smith next Tuesday at 2pm",
+    "expected_behavior": "Book appointment with Dr. Smith on next Tuesday at 14:00",
+    "expected_tool": "book_appointment",
+    "expected_parameters": {
+      "provider": "Dr. Smith",
+      "date": "next Tuesday",
+      "time": "14:00"
+    },
+    "evaluation_criteria": ["provider_extraction", "date_parsing", "time_parsing"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "appt_002",
+    "category": "appointment",
+    "difficulty": "easy",
+    "user_message": "Schedule a checkup for tomorrow morning",
+    "expected_behavior": "Book checkup appointment for tomorrow morning (suggest times)",
+    "expected_tool": "book_appointment",
+    "expected_parameters": {
+      "service_type": "checkup",
+      "date": "tomorrow",
+      "time_preference": "morning"
+    },
+    "evaluation_criteria": ["service_type_detection", "relative_date_parsing"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "appt_003",
+    "category": "appointment",
+    "difficulty": "medium",
+    "user_message": "I'd like to see Dr. Johnson in two weeks for a consultation",
+    "expected_behavior": "Book consultation with Dr. Johnson in 2 weeks",
+    "expected_tool": "book_appointment",
+    "expected_parameters": {
+      "provider": "Dr. Johnson",
+      "service_type": "consultation",
+      "date": "in two weeks"
+    },
+    "evaluation_criteria": ["relative_date_complex", "provider_extraction"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "appt_004",
+    "category": "appointment",
+    "difficulty": "medium",
+    "user_message": "Cancel my appointment with Dr. Williams on Friday",
+    "expected_behavior": "Cancel existing appointment with Dr. Williams on Friday",
+    "expected_tool": "cancel_appointment",
+    "expected_parameters": {
+      "provider": "Dr. Williams",
+      "date": "Friday"
+    },
+    "evaluation_criteria": ["cancellation_detection", "provider_extraction"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "appt_005",
+    "category": "appointment",
+    "difficulty": "hard",
+    "user_message": "I need an urgent appointment with any available cardiologist this week",
+    "expected_behavior": "Search for available cardiologists this week and suggest earliest slot",
+    "expected_tool": "book_appointment",
+    "expected_parameters": {
+      "provider_type": "cardiologist",
+      "date_range": "this week",
+      "urgency": "high"
+    },
+    "evaluation_criteria": ["specialist_detection", "urgency_handling", "flexibility"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "know_001",
+    "category": "knowledge_retrieval",
+    "difficulty": "easy",
+    "user_message": "What are your business hours?",
+    "expected_behavior": "Retrieve business hours information from knowledge base",
+    "expected_tool": "retrieve_knowledge",
+    "expected_parameters": {
+      "query": "business hours"
+    },
+    "evaluation_criteria": ["query_understanding", "knowledge_retrieval"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "know_002",
+    "category": "knowledge_retrieval",
+    "difficulty": "easy",
+    "user_message": "Tell me about your return policy",
+    "expected_behavior": "Retrieve return policy information from knowledge base",
+    "expected_tool": "retrieve_knowledge",
+    "expected_parameters": {
+      "query": "return policy"
+    },
+    "evaluation_criteria": ["policy_query_detection"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "know_003",
+    "category": "knowledge_retrieval",
+    "difficulty": "medium",
+    "user_message": "How do I reset my password?",
+    "expected_behavior": "Retrieve password reset instructions from knowledge base",
+    "expected_tool": "retrieve_knowledge",
+    "expected_parameters": {
+      "query": "reset password instructions"
+    },
+    "evaluation_criteria": ["instruction_query_detection"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "know_004",
+    "category": "knowledge_retrieval",
+    "difficulty": "medium",
+    "user_message": "What payment methods do you accept?",
+    "expected_behavior": "Retrieve payment methods information from knowledge base",
+    "expected_tool": "retrieve_knowledge",
+    "expected_parameters": {
+      "query": "payment methods accepted"
+    },
+    "evaluation_criteria": ["payment_query_detection"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "know_005",
+    "category": "knowledge_retrieval",
+    "difficulty": "hard",
+    "user_message": "I'm having trouble with my order, it says it's been delayed. What should I do?",
+    "expected_behavior": "Retrieve order delay handling procedures from knowledge base",
+    "expected_tool": "retrieve_knowledge",
+    "expected_parameters": {
+      "query": "order delay procedures"
+    },
+    "evaluation_criteria": ["problem_understanding", "solution_retrieval"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "web_001",
+    "category": "web_search",
+    "difficulty": "easy",
+    "user_message": "What's the weather like today?",
+    "expected_behavior": "Search web for current weather information",
+    "expected_tool": "web_search",
+    "expected_parameters": {
+      "query": "weather today"
+    },
+    "evaluation_criteria": ["current_info_detection", "web_search_trigger"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "web_002",
+    "category": "web_search",
+    "difficulty": "easy",
+    "user_message": "Who won the latest NBA championship?",
+    "expected_behavior": "Search web for recent NBA championship winner",
+    "expected_tool": "web_search",
+    "expected_parameters": {
+      "query": "latest NBA championship winner"
+    },
+    "evaluation_criteria": ["sports_query_detection", "recency_requirement"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "web_003",
+    "category": "web_search",
+    "difficulty": "medium",
+    "user_message": "What are the current interest rates for mortgages?",
+    "expected_behavior": "Search web for current mortgage interest rates",
+    "expected_tool": "web_search",
+    "expected_parameters": {
+      "query": "current mortgage interest rates"
+    },
+    "evaluation_criteria": ["financial_query_detection", "current_data_need"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "web_004",
+    "category": "web_search",
+    "difficulty": "medium",
+    "user_message": "Find me the latest news about artificial intelligence",
+    "expected_behavior": "Search web for recent AI news",
+    "expected_tool": "web_search",
+    "expected_parameters": {
+      "query": "latest artificial intelligence news"
+    },
+    "evaluation_criteria": ["news_query_detection", "topic_understanding"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "web_005",
+    "category": "web_search",
+    "difficulty": "hard",
+    "user_message": "Compare the specifications of iPhone 15 and Samsung Galaxy S24",
+    "expected_behavior": "Search web for iPhone 15 and Galaxy S24 specifications and provide comparison",
+    "expected_tool": "web_search",
+    "expected_parameters": {
+      "query": "iPhone 15 vs Samsung Galaxy S24 specifications comparison"
+    },
+    "evaluation_criteria": ["comparison_query_detection", "multi_item_handling"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "prod_006",
+    "category": "product_search",
+    "difficulty": "easy",
+    "user_message": "Show me books about cooking",
+    "expected_behavior": "Search for cooking books",
+    "expected_tool": "search_products",
+    "expected_parameters": {
+      "category": "books",
+      "query": "cooking"
+    },
+    "evaluation_criteria": ["category_detection"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "prod_007",
+    "category": "product_search",
+    "difficulty": "easy",
+    "user_message": "I need a yoga mat",
+    "expected_behavior": "Search for yoga mat in sports category",
+    "expected_tool": "search_products",
+    "expected_parameters": {
+      "category": "sports",
+      "query": "yoga mat"
+    },
+    "evaluation_criteria": ["sports_equipment_detection"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "prod_008",
+    "category": "product_search",
+    "difficulty": "medium",
+    "user_message": "Find office chairs under $300 with lumbar support",
+    "expected_behavior": "Search for office chairs with lumbar support, max price $300",
+    "expected_tool": "search_products",
+    "expected_parameters": {
+      "category": "furniture",
+      "max_price": 300,
+      "features": ["lumbar support"]
+    },
+    "evaluation_criteria": ["furniture_category", "feature_extraction"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "prod_009",
+    "category": "product_search",
+    "difficulty": "medium",
+    "user_message": "Looking for noise-canceling earbuds for travel",
+    "expected_behavior": "Search for noise-canceling earbuds suitable for travel",
+    "expected_tool": "search_products",
+    "expected_parameters": {
+      "category": "electronics",
+      "features": ["noise-canceling"],
+      "use_case": "travel"
+    },
+    "evaluation_criteria": ["use_case_detection"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "prod_010",
+    "category": "product_search",
+    "difficulty": "hard",
+    "user_message": "I want a smart watch that tracks swimming and has good battery life, prefer something stylish",
+    "expected_behavior": "Search for smart watches with swimming tracking and battery features, note style preference",
+    "expected_tool": "search_products",
+    "expected_parameters": {
+      "category": "electronics",
+      "features": ["swimming tracking", "battery life"],
+      "preferences": ["stylish"]
+    },
+    "evaluation_criteria": ["multi_feature_complex", "subjective_handling"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "appt_006",
+    "category": "appointment",
+    "difficulty": "easy",
+    "user_message": "Book a dental cleaning for next Monday",
+    "expected_behavior": "Book dental cleaning appointment for next Monday",
+    "expected_tool": "book_appointment",
+    "expected_parameters": {
+      "service_type": "dental cleaning",
+      "date": "next Monday"
+    },
+    "evaluation_criteria": ["service_type_detection"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "appt_007",
+    "category": "appointment",
+    "difficulty": "easy",
+    "user_message": "I want to see Dr. Lee this Thursday at 10am",
+    "expected_behavior": "Book appointment with Dr. Lee on Thursday at 10:00",
+    "expected_tool": "book_appointment",
+    "expected_parameters": {
+      "provider": "Dr. Lee",
+      "date": "this Thursday",
+      "time": "10:00"
+    },
+    "evaluation_criteria": ["basic_scheduling"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "appt_008",
+    "category": "appointment",
+    "difficulty": "medium",
+    "user_message": "Reschedule my Friday appointment to next week same time",
+    "expected_behavior": "Reschedule existing Friday appointment to same day/time next week",
+    "expected_tool": "reschedule_appointment",
+    "expected_parameters": {
+      "current_date": "Friday",
+      "new_date": "next week Friday"
+    },
+    "evaluation_criteria": ["reschedule_detection", "relative_scheduling"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "appt_009",
+    "category": "appointment",
+    "difficulty": "medium",
+    "user_message": "I need a follow-up with Dr. Martinez in 3 months",
+    "expected_behavior": "Book follow-up appointment with Dr. Martinez in 3 months",
+    "expected_tool": "book_appointment",
+    "expected_parameters": {
+      "provider": "Dr. Martinez",
+      "service_type": "follow-up",
+      "date": "in 3 months"
+    },
+    "evaluation_criteria": ["long_term_scheduling", "follow_up_detection"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "appt_010",
+    "category": "appointment",
+    "difficulty": "hard",
+    "user_message": "I have a conflict with my Tuesday 3pm appointment, can we move it to later in the day or Wednesday?",
+    "expected_behavior": "Identify conflicting appointment and suggest alternatives (Tuesday later or Wednesday)",
+    "expected_tool": "reschedule_appointment",
+    "expected_parameters": {
+      "current_date": "Tuesday",
+      "current_time": "15:00",
+      "preferred_options": ["Tuesday later", "Wednesday"]
+    },
+    "evaluation_criteria": ["conflict_handling", "flexible_rescheduling"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "know_006",
+    "category": "knowledge_retrieval",
+    "difficulty": "easy",
+    "user_message": "What is your shipping policy?",
+    "expected_behavior": "Retrieve shipping policy from knowledge base",
+    "expected_tool": "retrieve_knowledge",
+    "expected_parameters": {
+      "query": "shipping policy"
+    },
+    "evaluation_criteria": ["policy_retrieval"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "know_007",
+    "category": "knowledge_retrieval",
+    "difficulty": "easy",
+    "user_message": "How can I contact customer support?",
+    "expected_behavior": "Retrieve customer support contact information",
+    "expected_tool": "retrieve_knowledge",
+    "expected_parameters": {
+      "query": "customer support contact"
+    },
+    "evaluation_criteria": ["contact_info_retrieval"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "know_008",
+    "category": "knowledge_retrieval",
+    "difficulty": "medium",
+    "user_message": "Do you offer international shipping?",
+    "expected_behavior": "Retrieve international shipping information",
+    "expected_tool": "retrieve_knowledge",
+    "expected_parameters": {
+      "query": "international shipping"
+    },
+    "evaluation_criteria": ["specific_policy_query"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "know_009",
+    "category": "knowledge_retrieval",
+    "difficulty": "medium",
+    "user_message": "What's covered under your warranty?",
+    "expected_behavior": "Retrieve warranty coverage information",
+    "expected_tool": "retrieve_knowledge",
+    "expected_parameters": {
+      "query": "warranty coverage"
+    },
+    "evaluation_criteria": ["warranty_query_detection"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "know_010",
+    "category": "knowledge_retrieval",
+    "difficulty": "hard",
+    "user_message": "My package was damaged during shipping. What's the process for getting a replacement?",
+    "expected_behavior": "Retrieve damaged package replacement procedure",
+    "expected_tool": "retrieve_knowledge",
+    "expected_parameters": {
+      "query": "damaged package replacement process"
+    },
+    "evaluation_criteria": ["problem_to_solution_mapping"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "web_006",
+    "category": "web_search",
+    "difficulty": "easy",
+    "user_message": "What time is the Super Bowl this year?",
+    "expected_behavior": "Search web for current year's Super Bowl time",
+    "expected_tool": "web_search",
+    "expected_parameters": {
+      "query": "Super Bowl time this year"
+    },
+    "evaluation_criteria": ["event_timing_query"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "web_007",
+    "category": "web_search",
+    "difficulty": "easy",
+    "user_message": "Show me the current stock price of Apple",
+    "expected_behavior": "Search web for current Apple stock price",
+    "expected_tool": "web_search",
+    "expected_parameters": {
+      "query": "Apple stock price current"
+    },
+    "evaluation_criteria": ["stock_query_detection"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "web_008",
+    "category": "web_search",
+    "difficulty": "medium",
+    "user_message": "What are the best restaurants in San Francisco?",
+    "expected_behavior": "Search web for top-rated restaurants in San Francisco",
+    "expected_tool": "web_search",
+    "expected_parameters": {
+      "query": "best restaurants San Francisco"
+    },
+    "evaluation_criteria": ["location_based_query", "recommendation_request"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "web_009",
+    "category": "web_search",
+    "difficulty": "medium",
+    "user_message": "Find me reviews of the new Tesla Model 3",
+    "expected_behavior": "Search web for Tesla Model 3 reviews",
+    "expected_tool": "web_search",
+    "expected_parameters": {
+      "query": "Tesla Model 3 reviews"
+    },
+    "evaluation_criteria": ["review_request_detection"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "web_010",
+    "category": "web_search",
+    "difficulty": "hard",
+    "user_message": "I'm planning a trip to Japan. What are the visa requirements and best time to visit?",
+    "expected_behavior": "Search web for Japan visa requirements and optimal travel times",
+    "expected_tool": "web_search",
+    "expected_parameters": {
+      "query": "Japan visa requirements and best time to visit"
+    },
+    "evaluation_criteria": ["multi_part_query", "travel_planning"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "prod_011",
+    "category": "product_search",
+    "difficulty": "easy",
+    "user_message": "Cheap phone cases",
+    "expected_behavior": "Search for affordable phone cases",
+    "expected_tool": "search_products",
+    "expected_parameters": {
+      "category": "electronics",
+      "query": "phone cases",
+      "price_preference": "low"
+    },
+    "evaluation_criteria": ["informal_query_handling"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "prod_012",
+    "category": "product_search",
+    "difficulty": "medium",
+    "user_message": "Organic cotton t-shirts in large",
+    "expected_behavior": "Search for organic cotton t-shirts, size large",
+    "expected_tool": "search_products",
+    "expected_parameters": {
+      "category": "clothing",
+      "material": "organic cotton",
+      "size": "large"
+    },
+    "evaluation_criteria": ["material_and_size_extraction"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "prod_013",
+    "category": "product_search",
+    "difficulty": "medium",
+    "user_message": "Gaming mouse with RGB lighting",
+    "expected_behavior": "Search for gaming mice with RGB lighting feature",
+    "expected_tool": "search_products",
+    "expected_parameters": {
+      "category": "electronics",
+      "query": "gaming mouse",
+      "features": ["RGB lighting"]
+    },
+    "evaluation_criteria": ["gaming_accessory_detection"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "prod_014",
+    "category": "product_search",
+    "difficulty": "hard",
+    "user_message": "I'm looking for a birthday gift for my tech-savvy friend, something unique and around $50",
+    "expected_behavior": "Search for tech gifts around $50, handle gift context",
+    "expected_tool": "search_products",
+    "expected_parameters": {
+      "category": "electronics",
+      "price_around": 50,
+      "use_case": "gift"
+    },
+    "evaluation_criteria": ["gift_context_understanding", "target_audience"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "prod_015",
+    "category": "product_search",
+    "difficulty": "hard",
+    "user_message": "Best value mechanical keyboard for programming",
+    "expected_behavior": "Search for mechanical keyboards optimized for programming at good value",
+    "expected_tool": "search_products",
+    "expected_parameters": {
+      "category": "electronics",
+      "query": "mechanical keyboard programming",
+      "preference": "best value"
+    },
+    "evaluation_criteria": ["value_preference", "professional_use_case"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "appt_011",
+    "category": "appointment",
+    "difficulty": "easy",
+    "user_message": "Schedule a therapy session for Wednesday afternoon",
+    "expected_behavior": "Book therapy session on Wednesday afternoon",
+    "expected_tool": "book_appointment",
+    "expected_parameters": {
+      "service_type": "therapy",
+      "date": "Wednesday",
+      "time_preference": "afternoon"
+    },
+    "evaluation_criteria": ["therapy_service_detection"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "appt_012",
+    "category": "appointment",
+    "difficulty": "medium",
+    "user_message": "I need an eye exam before my vacation in April",
+    "expected_behavior": "Schedule eye exam appointment before April",
+    "expected_tool": "book_appointment",
+    "expected_parameters": {
+      "service_type": "eye exam",
+      "date_constraint": "before April"
+    },
+    "evaluation_criteria": ["deadline_understanding"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "appt_013",
+    "category": "appointment",
+    "difficulty": "medium",
+    "user_message": "Can I get a morning slot with Dr. Patel next week?",
+    "expected_behavior": "Search for morning appointments with Dr. Patel next week",
+    "expected_tool": "book_appointment",
+    "expected_parameters": {
+      "provider": "Dr. Patel",
+      "date": "next week",
+      "time_preference": "morning"
+    },
+    "evaluation_criteria": ["availability_query"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "appt_014",
+    "category": "appointment",
+    "difficulty": "hard",
+    "user_message": "I missed my last appointment with Dr. Chen, can we reschedule and I'd prefer earlier in the day this time",
+    "expected_behavior": "Reschedule missed appointment with Dr. Chen, prefer earlier time",
+    "expected_tool": "reschedule_appointment",
+    "expected_parameters": {
+      "provider": "Dr. Chen",
+      "reason": "missed appointment",
+      "time_preference": "earlier in day"
+    },
+    "evaluation_criteria": ["missed_appointment_handling", "preference_update"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "appt_015",
+    "category": "appointment",
+    "difficulty": "hard",
+    "user_message": "My child needs a pediatrician visit but I can only do afternoons after 4pm on weekdays",
+    "expected_behavior": "Search for pediatrician appointments after 4pm on weekdays",
+    "expected_tool": "book_appointment",
+    "expected_parameters": {
+      "provider_type": "pediatrician",
+      "time_constraint": "after 16:00",
+      "day_constraint": "weekdays"
+    },
+    "evaluation_criteria": ["complex_constraints", "pediatric_detection"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "know_011",
+    "category": "knowledge_retrieval",
+    "difficulty": "easy",
+    "user_message": "Where are you located?",
+    "expected_behavior": "Retrieve location/address information",
+    "expected_tool": "retrieve_knowledge",
+    "expected_parameters": {
+      "query": "location address"
+    },
+    "evaluation_criteria": ["location_query"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "know_012",
+    "category": "knowledge_retrieval",
+    "difficulty": "medium",
+    "user_message": "Do you have a price match guarantee?",
+    "expected_behavior": "Retrieve price match policy information",
+    "expected_tool": "retrieve_knowledge",
+    "expected_parameters": {
+      "query": "price match guarantee policy"
+    },
+    "evaluation_criteria": ["specific_policy_detection"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "know_013",
+    "category": "knowledge_retrieval",
+    "difficulty": "medium",
+    "user_message": "How long does standard shipping take?",
+    "expected_behavior": "Retrieve standard shipping duration information",
+    "expected_tool": "retrieve_knowledge",
+    "expected_parameters": {
+      "query": "standard shipping duration time"
+    },
+    "evaluation_criteria": ["shipping_time_query"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "know_014",
+    "category": "knowledge_retrieval",
+    "difficulty": "hard",
+    "user_message": "I bought something last week but haven't received a confirmation email. What should I do?",
+    "expected_behavior": "Retrieve missing confirmation email troubleshooting steps",
+    "expected_tool": "retrieve_knowledge",
+    "expected_parameters": {
+      "query": "missing confirmation email troubleshooting"
+    },
+    "evaluation_criteria": ["problem_diagnosis", "solution_retrieval"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "know_015",
+    "category": "knowledge_retrieval",
+    "difficulty": "hard",
+    "user_message": "What's the difference between your premium and standard membership?",
+    "expected_behavior": "Retrieve membership tier comparison information",
+    "expected_tool": "retrieve_knowledge",
+    "expected_parameters": {
+      "query": "premium vs standard membership comparison"
+    },
+    "evaluation_criteria": ["comparison_query", "membership_tiers"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "web_011",
+    "category": "web_search",
+    "difficulty": "easy",
+    "user_message": "What's trending on Twitter right now?",
+    "expected_behavior": "Search web for current Twitter trends",
+    "expected_tool": "web_search",
+    "expected_parameters": {
+      "query": "Twitter trending topics now"
+    },
+    "evaluation_criteria": ["social_media_trends"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "web_012",
+    "category": "web_search",
+    "difficulty": "medium",
+    "user_message": "What are the symptoms of COVID-19?",
+    "expected_behavior": "Search web for COVID-19 symptoms information",
+    "expected_tool": "web_search",
+    "expected_parameters": {
+      "query": "COVID-19 symptoms"
+    },
+    "evaluation_criteria": ["health_query_detection"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "web_013",
+    "category": "web_search",
+    "difficulty": "medium",
+    "user_message": "Find me a recipe for chocolate chip cookies",
+    "expected_behavior": "Search web for chocolate chip cookie recipe",
+    "expected_tool": "web_search",
+    "expected_parameters": {
+      "query": "chocolate chip cookies recipe"
+    },
+    "evaluation_criteria": ["recipe_query_detection"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "web_014",
+    "category": "web_search",
+    "difficulty": "hard",
+    "user_message": "What are the pros and cons of electric vehicles vs hybrid cars?",
+    "expected_behavior": "Search web for EV vs hybrid comparison with pros/cons",
+    "expected_tool": "web_search",
+    "expected_parameters": {
+      "query": "electric vehicles vs hybrid cars pros and cons"
+    },
+    "evaluation_criteria": ["comparative_analysis_query"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "web_015",
+    "category": "web_search",
+    "difficulty": "hard",
+    "user_message": "I'm starting a small business. What legal requirements do I need to know about?",
+    "expected_behavior": "Search web for small business legal requirements",
+    "expected_tool": "web_search",
+    "expected_parameters": {
+      "query": "small business legal requirements"
+    },
+    "evaluation_criteria": ["business_query", "legal_information_need"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "prod_016",
+    "category": "product_search",
+    "difficulty": "easy",
+    "user_message": "garden tools",
+    "expected_behavior": "Search for garden tools",
+    "expected_tool": "search_products",
+    "expected_parameters": {
+      "category": "garden",
+      "query": "tools"
+    },
+    "evaluation_criteria": ["minimal_query_handling"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "prod_017",
+    "category": "product_search",
+    "difficulty": "medium",
+    "user_message": "Non-stick cookware set for beginners",
+    "expected_behavior": "Search for non-stick cookware sets suitable for beginners",
+    "expected_tool": "search_products",
+    "expected_parameters": {
+      "category": "kitchen",
+      "features": ["non-stick"],
+      "target_user": "beginners"
+    },
+    "evaluation_criteria": ["skill_level_detection"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "prod_018",
+    "category": "product_search",
+    "difficulty": "medium",
+    "user_message": "Compact treadmill for small apartment",
+    "expected_behavior": "Search for compact/foldable treadmills",
+    "expected_tool": "search_products",
+    "expected_parameters": {
+      "category": "sports",
+      "query": "treadmill",
+      "features": ["compact"],
+      "use_case": "small space"
+    },
+    "evaluation_criteria": ["space_constraint_detection"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "prod_019",
+    "category": "product_search",
+    "difficulty": "hard",
+    "user_message": "Something to help me sleep better at night, maybe like white noise or aromatherapy",
+    "expected_behavior": "Search for sleep aid products like white noise machines or aromatherapy diffusers",
+    "expected_tool": "search_products",
+    "expected_parameters": {
+      "use_case": "sleep aid",
+      "product_types": ["white noise machine", "aromatherapy"]
+    },
+    "evaluation_criteria": ["vague_need_interpretation", "multi_solution_options"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "prod_020",
+    "category": "product_search",
+    "difficulty": "hard",
+    "user_message": "Top rated blender for smoothies, preferably quiet and easy to clean",
+    "expected_behavior": "Search for highly-rated blenders with quiet operation and easy cleaning",
+    "expected_tool": "search_products",
+    "expected_parameters": {
+      "category": "kitchen",
+      "query": "blender smoothies",
+      "features": ["quiet", "easy to clean"],
+      "sort_by": "rating"
+    },
+    "evaluation_criteria": ["multi_criteria_optimization", "rating_preference"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "appt_016",
+    "category": "appointment",
+    "difficulty": "easy",
+    "user_message": "Book physical therapy for tomorrow at 3pm",
+    "expected_behavior": "Book physical therapy appointment tomorrow at 15:00",
+    "expected_tool": "book_appointment",
+    "expected_parameters": {
+      "service_type": "physical therapy",
+      "date": "tomorrow",
+      "time": "15:00"
+    },
+    "evaluation_criteria": ["service_type_detection"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "appt_017",
+    "category": "appointment",
+    "difficulty": "medium",
+    "user_message": "I'd like to schedule a telehealth visit with Dr. Anderson",
+    "expected_behavior": "Book telehealth/virtual appointment with Dr. Anderson",
+    "expected_tool": "book_appointment",
+    "expected_parameters": {
+      "provider": "Dr. Anderson",
+      "appointment_type": "telehealth"
+    },
+    "evaluation_criteria": ["telehealth_detection"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "appt_018",
+    "category": "appointment",
+    "difficulty": "medium",
+    "user_message": "Cancel all my appointments for next week, I'll be traveling",
+    "expected_behavior": "Cancel multiple appointments in next week range",
+    "expected_tool": "cancel_appointment",
+    "expected_parameters": {
+      "date_range": "next week",
+      "reason": "traveling"
+    },
+    "evaluation_criteria": ["batch_cancellation", "reason_extraction"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "appt_019",
+    "category": "appointment",
+    "difficulty": "hard",
+    "user_message": "I need to see someone about my back pain but my regular doctor is booked. Who else can I see?",
+    "expected_behavior": "Search for alternative providers for back pain treatment",
+    "expected_tool": "book_appointment",
+    "expected_parameters": {
+      "issue": "back pain",
+      "provider_flexibility": true
+    },
+    "evaluation_criteria": ["alternative_provider_search", "symptom_understanding"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "appt_020",
+    "category": "appointment",
+    "difficulty": "hard",
+    "user_message": "My son has a soccer game at 5pm on Thursday but I also need to take him to the dentist that day",
+    "expected_behavior": "Find dental appointment for Thursday before 5pm or suggest alternative",
+    "expected_tool": "book_appointment",
+    "expected_parameters": {
+      "service_type": "dental",
+      "date": "Thursday",
+      "time_constraint": "before 17:00",
+      "patient": "child"
+    },
+    "evaluation_criteria": ["complex_scheduling_conflict", "time_constraint_parsing"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "know_016",
+    "category": "knowledge_retrieval",
+    "difficulty": "easy",
+    "user_message": "Are you open on weekends?",
+    "expected_behavior": "Retrieve weekend hours information",
+    "expected_tool": "retrieve_knowledge",
+    "expected_parameters": {
+      "query": "weekend hours open"
+    },
+    "evaluation_criteria": ["hours_query"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "know_017",
+    "category": "knowledge_retrieval",
+    "difficulty": "medium",
+    "user_message": "Can I exchange an item without a receipt?",
+    "expected_behavior": "Retrieve exchange policy without receipt information",
+    "expected_tool": "retrieve_knowledge",
+    "expected_parameters": {
+      "query": "exchange without receipt policy"
+    },
+    "evaluation_criteria": ["policy_with_condition"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "know_018",
+    "category": "knowledge_retrieval",
+    "difficulty": "medium",
+    "user_message": "What types of insurance do you accept?",
+    "expected_behavior": "Retrieve accepted insurance types information",
+    "expected_tool": "retrieve_knowledge",
+    "expected_parameters": {
+      "query": "accepted insurance types"
+    },
+    "evaluation_criteria": ["insurance_query"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "know_019",
+    "category": "knowledge_retrieval",
+    "difficulty": "hard",
+    "user_message": "I'm a student. Do you offer any discounts?",
+    "expected_behavior": "Retrieve student discount information",
+    "expected_tool": "retrieve_knowledge",
+    "expected_parameters": {
+      "query": "student discount"
+    },
+    "evaluation_criteria": ["discount_eligibility_query"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "know_020",
+    "category": "knowledge_retrieval",
+    "difficulty": "hard",
+    "user_message": "I received the wrong item in my order. How does the return and replacement process work?",
+    "expected_behavior": "Retrieve wrong item return and replacement procedure",
+    "expected_tool": "retrieve_knowledge",
+    "expected_parameters": {
+      "query": "wrong item return replacement process"
+    },
+    "evaluation_criteria": ["specific_issue_resolution"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "web_016",
+    "category": "web_search",
+    "difficulty": "easy",
+    "user_message": "Who is the current president of France?",
+    "expected_behavior": "Search web for current French president",
+    "expected_tool": "web_search",
+    "expected_parameters": {
+      "query": "current president of France"
+    },
+    "evaluation_criteria": ["factual_current_query"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "web_017",
+    "category": "web_search",
+    "difficulty": "medium",
+    "user_message": "What are the best practices for remote work?",
+    "expected_behavior": "Search web for remote work best practices",
+    "expected_tool": "web_search",
+    "expected_parameters": {
+      "query": "remote work best practices"
+    },
+    "evaluation_criteria": ["professional_advice_query"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "web_018",
+    "category": "web_search",
+    "difficulty": "medium",
+    "user_message": "How do I fix a leaky faucet?",
+    "expected_behavior": "Search web for faucet repair instructions",
+    "expected_tool": "web_search",
+    "expected_parameters": {
+      "query": "how to fix leaky faucet"
+    },
+    "evaluation_criteria": ["diy_instruction_query"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "web_019",
+    "category": "web_search",
+    "difficulty": "hard",
+    "user_message": "What's the environmental impact of cryptocurrency mining?",
+    "expected_behavior": "Search web for cryptocurrency mining environmental impact",
+    "expected_tool": "web_search",
+    "expected_parameters": {
+      "query": "cryptocurrency mining environmental impact"
+    },
+    "evaluation_criteria": ["complex_topic_query", "environmental_concern"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "web_020",
+    "category": "web_search",
+    "difficulty": "hard",
+    "user_message": "Compare the education systems of Finland and Singapore",
+    "expected_behavior": "Search web for comparison of Finnish and Singaporean education systems",
+    "expected_tool": "web_search",
+    "expected_parameters": {
+      "query": "Finland vs Singapore education system comparison"
+    },
+    "evaluation_criteria": ["international_comparison", "education_topic"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "prod_021",
+    "category": "product_search",
+    "difficulty": "medium",
+    "user_message": "Sustainable fashion brands with affordable prices",
+    "expected_behavior": "Search for sustainable/eco-friendly clothing at reasonable prices",
+    "expected_tool": "search_products",
+    "expected_parameters": {
+      "category": "clothing",
+      "features": ["sustainable", "eco-friendly"],
+      "price_preference": "affordable"
+    },
+    "evaluation_criteria": ["sustainability_detection", "value_balance"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "prod_022",
+    "category": "product_search",
+    "difficulty": "hard",
+    "user_message": "My back hurts from sitting all day. What can help?",
+    "expected_behavior": "Search for ergonomic products for back pain relief",
+    "expected_tool": "search_products",
+    "expected_parameters": {
+      "use_case": "back pain relief",
+      "product_types": ["ergonomic chair", "back support", "standing desk"]
+    },
+    "evaluation_criteria": ["problem_to_product_mapping", "health_related_need"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "prod_023",
+    "category": "product_search",
+    "difficulty": "medium",
+    "user_message": "Kid-friendly tablets with parental controls",
+    "expected_behavior": "Search for tablets designed for children with parental control features",
+    "expected_tool": "search_products",
+    "expected_parameters": {
+      "category": "electronics",
+      "target_user": "kids",
+      "features": ["parental controls"]
+    },
+    "evaluation_criteria": ["child_product_detection", "safety_features"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "prod_024",
+    "category": "product_search",
+    "difficulty": "hard",
+    "user_message": "I want to start making pour-over coffee at home but don't know what equipment I need",
+    "expected_behavior": "Search for pour-over coffee starter equipment/kits",
+    "expected_tool": "search_products",
+    "expected_parameters": {
+      "category": "kitchen",
+      "use_case": "pour-over coffee",
+      "experience_level": "beginner"
+    },
+    "evaluation_criteria": ["hobby_starter_detection", "complete_solution_need"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "prod_025",
+    "category": "product_search",
+    "difficulty": "medium",
+    "user_message": "Durable luggage for frequent travelers",
+    "expected_behavior": "Search for high-durability luggage suitable for frequent travel",
+    "expected_tool": "search_products",
+    "expected_parameters": {
+      "category": "travel",
+      "features": ["durable"],
+      "use_case": "frequent travel"
+    },
+    "evaluation_criteria": ["durability_requirement", "usage_frequency"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "appt_021",
+    "category": "appointment",
+    "difficulty": "medium",
+    "user_message": "I need a flu shot before traveling internationally",
+    "expected_behavior": "Schedule flu shot appointment with urgency due to travel",
+    "expected_tool": "book_appointment",
+    "expected_parameters": {
+      "service_type": "flu shot",
+      "urgency": "before travel"
+    },
+    "evaluation_criteria": ["vaccination_detection", "deadline_awareness"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "appt_022",
+    "category": "appointment",
+    "difficulty": "hard",
+    "user_message": "Looking for a second opinion consultation with an oncologist",
+    "expected_behavior": "Book consultation with oncologist for second opinion",
+    "expected_tool": "book_appointment",
+    "expected_parameters": {
+      "provider_type": "oncologist",
+      "service_type": "second opinion consultation"
+    },
+    "evaluation_criteria": ["specialist_detection", "sensitive_issue_handling"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "appt_023",
+    "category": "appointment",
+    "difficulty": "medium",
+    "user_message": "My appointment reminder says 2pm but I thought it was at 3pm",
+    "expected_behavior": "Verify appointment time and clarify discrepancy",
+    "expected_tool": "check_appointment",
+    "expected_parameters": {
+      "action": "verify_time",
+      "expected_time": "15:00",
+      "stated_time": "14:00"
+    },
+    "evaluation_criteria": ["confusion_handling", "verification_request"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "appt_024",
+    "category": "appointment",
+    "difficulty": "hard",
+    "user_message": "Can I bring my service dog to my appointment?",
+    "expected_behavior": "Check service animal policy and confirm with provider",
+    "expected_tool": "retrieve_knowledge",
+    "expected_parameters": {
+      "query": "service animal policy appointments"
+    },
+    "evaluation_criteria": ["accommodation_request", "policy_inquiry"],
+    "multi_turn": false,
+    "context_messages": []
+  },
+  {
+    "id": "appt_025",
+    "category": "appointment",
+    "difficulty": "medium",
+    "user_message": "Set up a recurring physical therapy appointment every Tuesday for 6 weeks",
+    "expected_behavior": "Book recurring physical therapy appointments on Tuesdays for 6 weeks",
+    "expected_tool": "book_appointment",
+    "expected_parameters": {
+      "service_type": "physical therapy",
+      "recurrence": "weekly",
+      "day": "Tuesday",
+      "duration_weeks": 6
+    },
+    "evaluation_criteria": ["recurring_appointment_detection", "series_booking"],
+    "multi_turn": false,
+    "context_messages": []
+  }
+]
+

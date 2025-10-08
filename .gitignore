@@ -149,6 +149,7 @@ venv.bak/
 
 # tecnhical paper
 techical_paper/
+techical_paper/technical_paper.md
 
 # Spyder project settings
 .spyderproject

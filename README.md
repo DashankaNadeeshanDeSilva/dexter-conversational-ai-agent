@@ -1,7 +1,7 @@
 
 # 🤖 Dexter — Conversational AI Agent for Customer Support Assistance
 
-## 01. Introduction
+## Introduction
 
 Dexter is a **production-ready, serverless-first AI agent backend** built for customer support assistance. It blends four **human-like memory systems** with **tool** use and **LLM reasoning** to deliver contextual, adaptive, and personalized conversations. It is designed for **low cold-starts** on **AWS Lambda, efficient memory access, and clean extensibility**. Dexter includes a comprehensive **evaluation system with LLM-as-judge assessment**, enabling continuous quality monitoring and improvement.
 
@@ -9,17 +9,13 @@ Dexter is a **production-ready, serverless-first AI agent backend** built for cu
 
 ![](docs/system_overview.jpeg)
 
-## 02. Motivation
+## Motivation
 
 Customer support should feel human: aware of context, able to remember preferences, and capable of improving with every interaction. Dexter focuses on memory, tool-use, and safety to enable trustworthy, high-quality assistance.
 
 ## 03. System Architecture
 
-![](docs/System_Architecture_overview.jpeg)
-
-See also: **[Detailed System Architecture](docs/Detailed_system.png)**
-
-## Core Components
+### Core Components
 
 - **ReAct Agent**: Reasoning engine coordinating memory and tools
 - **Memory Manager**: Orchestrates short-term, semantic, episodic, procedural memory
@@ -46,7 +42,11 @@ See also: **[Detailed System Architecture](docs/Detailed_system.png)**
 - **Comprehensive Tests**: Pytest suite and utilities
 - **Evaluation System**: LLM-as-judge evaluation with 130 test cases, automated quality assessment, and Prometheus metrics
 
-## 05. Quick Start
+![](docs/System_Architecture_overview.jpeg)
+
+See also: **[Detailed System Architecture](docs/Detailed_system.png)**
+
+## Quick Start
 
 ### Prerequisites & Tech Stack
 
@@ -103,7 +103,7 @@ curl -X POST "http://localhost:8000/memories/query" \
      }'
 ```
 
-## 06. API Overview
+## API Overview
 
 - **GET** `/health` — service health
 - **POST** `/chat` — send a message, get agent response
@@ -115,7 +115,7 @@ curl -X POST "http://localhost:8000/memories/query" \
 
 Note: When `ENABLE_METRICS=true`, Prometheus metrics are exposed at **`/metrics`**.
 
-## 07. Development
+## Development
 
 See the **[Development Guide](docs/DEVELOPMENT.md)** for setup, extending tools, testing, and best practices.
 
@@ -183,7 +183,7 @@ make lambda-run            # pass ENV_FILE=.env.lambda if needed
 make lambda-invoke-health  # curl http://localhost:9000/2015-03-31/functions/function/invocations
 ```
 
-## 08. Deployment (Serverless‑First)
+## Deployment (Serverless‑First)
 
 Dexter is optimized for **AWS Lambda + API Gateway** using a Lambda container image. The app uses **Mangum** to translate API Gateway events into ASGI for FastAPI, with **lazy initialization** to reduce cold-starts.
 
@@ -207,14 +207,14 @@ make lambda-invoke-health
 
 ECS/ALB instructions remain in docs for reference but are deprecated in favor of Lambda. If you still need ECS, review `docs/DEPLOYMENT.md` and `.github/workflows/` and adapt accordingly.
 
-## 09. Monitoring & Observability
+## Monitoring & Observability
 
 - **Default**: CloudWatch Logs (Lambda)
 - **Optional**: Prometheus/Grafana for local or containerized deployments
   - App metrics available at `/metrics` when `ENABLE_METRICS=true`
   - Example configs under `monitoring/`
 
-## 10. Agent Evaluation & Quality Assurance
+## Agent Evaluation & Quality Assurance
 
 Dexter includes a comprehensive evaluation system to assess and monitor agent performance across multiple dimensions.
 
@@ -301,26 +301,26 @@ The evaluation system helps you:
 - ✅ Validate changes before deployment
 - ✅ Monitor production-like scenarios
 
-## 11. Security
+## Security
 
 - **Secrets**: Prefer AWS Secrets Manager for `OPENAI_API_KEY`, `PINECONE_API_KEY`, `MONGODB_URI`
 - **Least Privilege**: Scope IAM role to only required services
 - **Validation**: Pydantic schema validation on inputs
 - **Privacy**: Store only what you need; configure retention policies
 
-## 12. Usage Examples
+## Usage Examples
 
 See **[Usage Examples](docs/USAGE_EXAMPLES.md)** for end‑to‑end flows and tool usage.
 
-## 13. Contributing
+## Contributing
 
 Contributions are welcome! Please read the **[Development Guide](docs/DEVELOPMENT.md)** and open a PR.
 
-## 14. License
+## License
 
 MIT — see **[LICENSE](LICENSE)**.
 
-## 15. Acknowledgments
+## Acknowledgments
 
 - Built with [FastAPI](https://fastapi.tiangolo.com/)
 - Powered by [OpenAI](https://openai.com/)

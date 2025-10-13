@@ -7,15 +7,24 @@ Dexter is a **production-ready, serverless-first AI agent backend** built for cu
 
 **Read more:** [Agentic Memory — how AI agents learn, remember, and improve](https://dashankadesilva.medium.com/agentic-memory-how-ai-agents-learn-remember-and-improve-fd683c344685)
 
-![](docs/System_Architecture_overview.jpeg)
-
-See also: **[Detailed System Architecture](docs/Detailed_system.png)**
+![](docs/system_overview.jpeg)
 
 ## 02. Motivation
 
 Customer support should feel human: aware of context, able to remember preferences, and capable of improving with every interaction. Dexter focuses on memory, tool-use, and safety to enable trustworthy, high-quality assistance.
 
-## 03. Key Features
+## 03. System Architecture
+
+![](docs/System_Architecture_overview.jpeg)
+
+See also: **[Detailed System Architecture](docs/Detailed_system.png)**
+
+## Core Components
+
+- **ReAct Agent**: Reasoning engine coordinating memory and tools
+- **Memory Manager**: Orchestrates short-term, semantic, episodic, procedural memory
+- **Tools**: Pluggable actions (product search, appointments, retrieval, web)
+- **FastAPI App**: HTTP API exposing chat, memory, and session endpoints
 
 ### Memory Systems
 - **Short‑term Memory**: Maintains conversation context within a session
@@ -36,13 +45,6 @@ Customer support should feel human: aware of context, able to remember preferenc
 - **Optional Metrics**: Prometheus-style metrics exposed at `/metrics`
 - **Comprehensive Tests**: Pytest suite and utilities
 - **Evaluation System**: LLM-as-judge evaluation with 130 test cases, automated quality assessment, and Prometheus metrics
-
-## 04. Core Components
-
-- **ReAct Agent**: Reasoning engine coordinating memory and tools
-- **Memory Manager**: Orchestrates short-term, semantic, episodic, procedural memory
-- **Tools**: Pluggable actions (product search, appointments, retrieval, web)
-- **FastAPI App**: HTTP API exposing chat, memory, and session endpoints
 
 ## 05. Quick Start
 

@@ -13,7 +13,7 @@ Dexter is a **production-ready, serverless-first AI agent backend** built for cu
 
 Customer support should feel human: aware of context, able to remember preferences, and capable of improving with every interaction. Dexter focuses on memory, tool-use, and safety to enable trustworthy, high-quality assistance.
 
-## 03. System Architecture
+## System Architecture
 
 ### Core Components
 
